@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header>
+    <h1>网申填报助手</h1>
+    <span id="llm-state" class="state"></span>
+  </header>
+
+  <section class="actions">
+    <button id="btn-plan" class="primary">⚡ 生成当前页面填报计划</button>
+    <div id="plan-msg" class="msg"></div>
+  </section>
+
+  <details id="sec-profile" open>
+    <summary>简历档案（JSON）</summary>
+    <textarea id="profile" spellcheck="false"></textarea>
+    <div class="row">
+      <button id="btn-save-profile" class="primary">保存简历</button>
+      <button id="btn-example">载入示例</button>
+      <span id="profile-msg" class="msg"></span>
+    </div>
+    <p class="hint">顶层列表键名建议用 <code>internships / projects / awards / educations</code>，
+      其他键名的列表会交给 LLM 猜测对应关系。基础字段放 <code>basic</code>、求职意向放 <code>expect</code>。</p>
+  </details>
+
+  <details id="sec-llm">
+    <summary>LLM 设置（可选，语义匹配用）</summary>
+    <label>接口地址（OpenAI 兼容）<input id="llm-base" placeholder="https://api.deepseek.com/v1" /></label>
+    <label>模型<input id="llm-model" placeholder="deepseek-chat" /></label>
+    <label>API Key<input id="llm-key" type="password" placeholder="仅存本地" /></label>
+    <div class="row">
+      <button id="btn-save-llm" class="primary">保存 LLM 设置</button>
+      <span id="llm-msg" class="msg"></span>
+    </div>
+    <p class="hint">不配置也能用：常见字段走内置规则匹配，匹配不到的会标出提醒人工填写。
+      配置后规则外的字段由大模型语义映射，选项匹配也支持大模型兜底。</p>
+  </details>
+
+  <footer>
+    <a id="link-demo" href="#">打开本地测试页</a>
+    <span class="dim">简历与 Key 仅存浏览器本地，不会上传</span>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>

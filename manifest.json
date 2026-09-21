@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "网申填报助手",
+  "version": "0.1.0",
+  "description": "规则 + LLM 语义匹配的网申表单自动填报：支持经历类重复段落自动「添加」，区分选择式/自定义式条目，填报前生成计划供确认。",
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": ["http://*/*", "https://*/*"],
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "网申填报助手"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": [
+        "content/rules.js",
+        "content/extract.js",
+        "content/filler.js",
+        "content/repeater.js",
+        "content/panel.js",
+        "content/main.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

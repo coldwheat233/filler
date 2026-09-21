@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>某某公司2026届校园招聘网申 - 演示</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font: 14px/1.6 "Microsoft YaHei", system-ui, sans-serif; background: #f0f2f5; color: #333; }
+  .wrap { max-width: 860px; margin: 24px auto; background: #fff; border-radius: 10px; padding: 28px 36px; box-shadow: 0 2px 12px rgba(0,0,0,.06); }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  .sub { color: #888; font-size: 12.5px; margin-bottom: 20px; }
+  h2 { font-size: 15.5px; margin: 26px 0 12px; padding-left: 8px; border-left: 3px solid #1a73e8; }
+  .form-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+  .field-label { width: 110px; text-align: right; color: #555; flex-shrink: 0; padding-top: 5px; }
+  .field-label .req { color: #e5484d; margin-right: 2px; }
+  .control { flex: 1; }
+  input[type=text], input[type=date], textarea, select {
+    width: 100%; border: 1px solid #d0d7de; border-radius: 6px; padding: 6px 10px; font-size: 13.5px; background: #fff;
+  }
+  textarea { min-height: 64px; resize: vertical; }
+  .radio-group { display: flex; gap: 18px; padding-top: 5px; }
+  .radio-group label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+
+  /* 自定义下拉（模拟 element/antd 风格） */
+  .select { position: relative; }
+  .select-trigger { border: 1px solid #d0d7de; border-radius: 6px; padding: 6px 10px; cursor: pointer; background: #fff; user-select: none; }
+  .select-trigger.placeholder { color: #aaa; }
+  .select-trigger::after { content: "▾"; float: right; color: #999; }
+  .select-options { display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #fff;
+    border: 1px solid #e0e4ea; border-radius: 6px; box-shadow: 0 6px 16px rgba(0,0,0,.12); z-index: 30; max-height: 200px; overflow: auto; }
+  .select-options li { padding: 7px 12px; cursor: pointer; list-style: none; }
+  .select-options li:hover { background: #f0f6ff; }
+  .select.open .select-options { display: block; }
+
+  /* 重复段落 */
+  .rep-block { border: 1px solid #e6e9ef; border-radius: 8px; padding: 14px 16px 4px; margin-bottom: 10px; background: #fbfcfe; }
+  .add-btn { display: inline-flex; align-items: center; gap: 4px; border: 1px dashed #1a73e8; color: #1a73e8;
+    background: #f5f9ff; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 13px; user-select: none; }
+  .add-btn:hover { background: #eaf2ff; }
+  .add-btn[disabled] { opacity: .45; cursor: not-allowed; }
+  .tip { font-size: 12px; color: #999; margin-top: 4px; }
+  .grid2 { display: flex; gap: 12px; }
+  .grid2 > div { flex: 1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>某某公司 2026 届校园招聘 · 网申登记表（演示页）</h1>
+  <div class="sub">用于测试插件：包含常见字段形态 + 两种经历重复段落（自定义式 / 选择式）。仅供测试，非真实招聘。</div>
+
+  <h2>基本信息</h2>
+  <div class="form-item">
+    <div class="field-label"><span class="req">*</span>姓名</div>
+    <div class="control"><input type="text" id="name" name="name" placeholder="请输入真实姓名" /></div>
+  </div>
+  <div class="form-item">
+    <div class="field-label"><span class="req">*</span>手机号码（Mobile）</div>
+    <div class="control"><input type="text" id="mobile" name="mobile" placeholder="用于接收面试通知" /></div>
+  </div>
+  <div class="form-item">
+    <div class="field-label"><span class="req">*</span>电子邮箱</div>
+    <div class="control"><input type="text" id="email" name="email" placeholder="name@domain.com" /></div>
+  </div>
+  <div class="form-item">
+    <div class="field-label"><span class="req">*</span>性别</div>
+    <div class="control radio-group">
+      <label><input type="radio" name="gender" id="gender-m" value="男" />男</label>
+      <label><input type="radio" name="gender" id="gender-f" value="女" />女</label>
+    </div>
+  </div>
+  <div class="form-item">
+    <div class="field-label"><span class="req">*</span>出生年月日</div>
+    <div class="control"><input type="date" id="birth" name="birth" /></div>
+  </div>
+  <div class="form-item">
+    <div class="field-label"><span class="req">*</span>身份证号</div>
+    <div class="control"><input type="text" id="idcard" name="idcard" /></div>
+  </div>
+  <div class="form-item">
+    <div class="field-label">最高学历</div>
+    <div class="control">
+      <select id="degree" name="degree">
+        <option value="">请选择</option>
+        <option>博士</option><option>硕士</option><option>本科</option><option>大专</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-item">
+    <div class="field-label"><span class="req">*</span>政治面貌</div>
+    <div class="control">
+      <div class="select" id="political">
+        <div class="select-trigger placeholder">请选择政治面貌</div>
+        <ul class="select-options">
+          <li>中共党员</li><li>中共预备党员</li><li>共青团员</li><li>群众</li><li>民主党派</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="form-item">
+    <div class="field-label">期望工作城市</div>
+    <div class="control">
+      <div class="select" id="expectcity">
+        <div class="select-trigger placeholder">请选择期望城市</div>
+        <ul class="select-options">
+          <li>北京</li><li>上海</li><li>杭州</li><li>深圳</li><li>成都</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h2>实习 / 工作经历（自定义式：每一格都是自由输入）</h2>
+  <div id="exp-list">
+    <div class="exp-item rep-block">
+      <div class="form-item">
+        <div class="field-label"><span class="req">*</span>公司名称</div>
+        <div class="control"><input type="text" name="exp_company_0" placeholder="请输入公司全称" /></div>
+      </div>
+      <div class="form-item">
+        <div class="field-label">职位名称</div>
+        <div class="control"><input type="text" name="exp_title_0" placeholder="请输入职位" /></div>
+      </div>
+      <div class="form-item">
+        <div class="field-label">起止时间</div>
+        <div class="control grid2">
+          <div><input type="date" name="exp_start_0" title="开始时间" /></div>
+          <div><input type="date" name="exp_end_0" title="结束时间" /></div>
+        </div>
+      </div>
+      <div class="form-item">
+        <div class="field-label">工作内容</div>
+        <div class="control"><textarea name="exp_desc_0" placeholder="描述主要职责与业绩"></textarea></div>
+      </div>
+    </div>
+  </div>
+  <button class="add-btn" id="exp-add" type="button">＋ 添加实习经历</button>
+  <div class="tip">最多 3 段实习经历</div>
+
+  <h2>获奖情况（选择式：奖项与等级均从下拉中选择）</h2>
+  <div id="award-list">
+    <div class="award-item rep-block">
+      <div class="form-item">
+        <div class="field-label"><span class="req">*</span>奖项名称</div>
+        <div class="control">
+          <select name="award_name_0">
+            <option value="">请选择奖项</option>
+            <option>国家奖学金</option><option>国家励志奖学金</option>
+            <option>校一等奖学金</option><option>校二等奖学金</option>
+            <option>优秀学生干部</option><option>三好学生</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-item">
+        <div class="field-label">获奖等级</div>
+        <div class="control">
+          <select name="award_level_0">
+            <option value="">请选择等级</option>
+            <option>国家级</option><option>省级</option><option>校级</option><option>院级</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-item">
+        <div class="field-label">获奖时间</div>
+        <div class="control"><input type="date" name="award_date_0" /></div>
+      </div>
+    </div>
+  </div>
+  <button class="add-btn" id="award-add" type="button">添加获奖记录</button>
+  <div class="tip">最多 5 条获奖记录</div>
+
+  <h2>其他</h2>
+  <div class="form-item">
+    <div class="field-label">备注</div>
+    <div class="control"><textarea id="note" placeholder="选填：其他需要说明的情况"></textarea></div>
+  </div>
+</div>
+
+<template id="exp-tpl">
+  <div class="exp-item rep-block">
+    <div class="form-item">
+      <div class="field-label"><span class="req">*</span>公司名称</div>
+      <div class="control"><input type="text" name="exp_company_{i}" placeholder="请输入公司全称" /></div>
+    </div>
+    <div class="form-item">
+      <div class="field-label">职位名称</div>
+      <div class="control"><input type="text" name="exp_title_{i}" placeholder="请输入职位" /></div>
+    </div>
+    <div class="form-item">
+      <div class="field-label">起止时间</div>
+      <div class="control grid2">
+        <div><input type="date" name="exp_start_{i}" title="开始时间" /></div>
+        <div><input type="date" name="exp_end_{i}" title="结束时间" /></div>
+      </div>
+    </div>
+    <div class="form-item">
+      <div class="field-label">工作内容</div>
+      <div class="control"><textarea name="exp_desc_{i}" placeholder="描述主要职责与业绩"></textarea></div>
+    </div>
+  </div>
+</template>
+
+<template id="award-tpl">
+  <div class="award-item rep-block">
+    <div class="form-item">
+      <div class="field-label"><span class="req">*</span>奖项名称</div>
+      <div class="control">
+        <select name="award_name_{i}">
+          <option value="">请选择奖项</option>
+          <option>国家奖学金</option><option>国家励志奖学金</option>
+          <option>校一等奖学金</option><option>校二等奖学金</option>
+          <option>优秀学生干部</option><option>三好学生</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-item">
+      <div class="field-label">获奖等级</div>
+      <div class="control">
+        <select name="award_level_{i}">
+          <option value="">请选择等级</option>
+          <option>国家级</option><option>省级</option><option>校级</option><option>院级</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-item">
+      <div class="field-label">获奖时间</div>
+      <div class="control"><input type="date" name="award_date_{i}" /></div>
+    </div>
+  </div>
+</template>
+
+<script>
+  // ---------- 重复段落「添加」逻辑：克隆模板、重命名、追加 ----------
+  function fwDemoAdd(tplId, listId, max) {
+    const list = document.getElementById(listId);
+    if (list.children.length >= max) {
+      alert("最多 " + max + " 条");
+      return;
+    }
+    const idx = list.children.length;
+    const node = document.getElementById(tplId).content.firstElementChild.cloneNode(true);
+    node.querySelectorAll("input,textarea,select").forEach((el) => {
+      if (el.name) el.name = el.name.replace("{i}", idx);
+      el.value = "";
+    });
+    list.appendChild(node);
+    node.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  document.getElementById("exp-add").addEventListener("click", () => fwDemoAdd("exp-tpl", "exp-list", 3));
+  document.getElementById("award-add").addEventListener("click", () => fwDemoAdd("award-tpl", "award-list", 5));
+
+  // ---------- 自定义下拉 ----------
+  document.querySelectorAll(".select").forEach((box) => {
+    const trigger = box.querySelector(".select-trigger");
+    trigger.addEventListener("mousedown", (e) => {
+      e.stopPropagation();
+      document.querySelectorAll(".select.open").forEach((o) => { if (o !== box) o.classList.remove("open"); });
+      box.classList.toggle("open");
+    });
+    box.querySelectorAll(".select-options li").forEach((li) => {
+      li.addEventListener("click", (e) => {
+        e.stopPropagation();
+        trigger.textContent = li.textContent;
+        trigger.classList.remove("placeholder");
+        box.classList.remove("open");
+      });
+    });
+  });
+  document.addEventListener("click", () => {
+    document.querySelectorAll(".select.open").forEach((o) => o.classList.remove("open"));
+  });
+</script>
+</body>
+</html>
