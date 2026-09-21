@@ -51,24 +51,46 @@
 
 ## 简历 JSON 格式
 
+弹窗本身就是**结构化编辑器**（分页签：基本 / 校招求职 / 经历段落 / 其他），这里是它的数据结构，也是 JSON 高级模式的格式：
+
 ```json
 {
-  "basic":   { "name": "张三", "gender": "男", "birth_date": "2002-06-15", "phone": "138...", "email": "...", "id_card": "...", "political": "共青团员" },
-  "expect":  { "position": "数据分析师", "city": "北京", "salary": "10000-15000元/月" },
-  "educations":  [ { "school": "浙江大学", "major": "统计学", "degree": "本科", "start": "2020-09", "end": "2024-06" } ],
-  "internships": [ { "company": "字节跳动", "title": "数据分析实习生", "start": "2025-03", "end": "2025-09", "description": "……" } ],
-  "awards":      [ { "name": "国家奖学金", "level": "国家级", "date": "2022-10" } ],
-  "projects":    [ { "name": "校园二手平台", "role": "后端负责人", "description": "……" } ]
+  "basic":  { "name": "张三", "nickname": "花名", "last_pinyin": "zhang", "first_pinyin": "san",
+              "gender": "男", "birth_date": "2002-06-15", "phone": "138...", "email": "...",
+              "id_type": "身份证", "id_card": "...", "nationality": "中国", "city": "现居地",
+              "native_place": "籍贯", "ethnic": "汉族", "height": "178", "weight": "65",
+              "huji_type": "居民户口", "marital": "未婚", "political": "共青团员",
+              "qq": "...", "wechat": "...", "homepage": "https://github.com/..." },
+  "expect": { "site": "期望面试站点", "position": "后端开发", "city": "北京", "salary": "...",
+              "source": "内部推荐", "adjust": "是", "refcode": "..." },
+  "edu":    { "benke_school": "本科学校", "benke_subject": "工学", "benke_major": "软件工程",
+              "graduate_school": "毕业学校", "top_subject": "工学", "top_major": "...",
+              "rank": "前25%", "fresh": "应届", "english_level": "CET-6", "english_score": "550",
+              "other_lang": "", "lang_level": "", "computer_level": "三级",
+              "scholarship": "校一等奖学金", "outstanding": "校级", "project_count": "3-5个",
+              "cadre_level": "院级", "cadre_title": "学习委员", "contest_level": "省级" },
+  "educations":  [ { "school": "...", "college": "学院名称", "major": "...", "degree": "本科",
+                     "degree_level": "学士", "subject": "工学", "train_mode": "全日制", "rank": "前25%",
+                     "tongzhao": "是", "abroad": "否", "start": "2020-09", "end": "2024-06" } ],
+  "internships": [ { "company": "...", "title": "...", "start": "...", "end": "...", "description": "..." } ],
+  "projects":    [ { "name": "...", "role": "...", "start": "...", "end": "至今", "description": "..." } ],
+  "awards":      [ { "name": "...", "date": "...", "level": "国家级", "description": "" } ],
+  "languages":   [ { "language": "英语", "score": "CET-6 550", "proficiency": "日常会话" } ],
+  "researches":  [ { "name": "专利/论文名", "date": "...", "level": "...", "description": "..." } ],
+  "games":       [ { "name": "Minecraft", "hours": "单机时长 500h+", "depth": "..." } ],
+  "extra":  { "obey": "是", "dispatch": "是", "overseas": "否", "relatives": "否" },
+  "self":   { "description": "自我描述…" },
+  "sectionAliases": { "游戏经历": "games", "志愿者经历": "volunteers" }
 }
 ```
 
 说明：
 
-- `basic` / `expect` 下的键名即规则匹配目标，可以在 `content/rules.js` 的 `FW_RULES` 里增删；
-- 顶层**列表键名建议用** `internships / projects / awards / educations / trainings / skills`，
-  主题识别规则在 `FW_REPEATER_THEMES`；用其他名字时若配置了 LLM 会自动猜对应关系；
-- 列表条目的子键（如 `company / title / level`）对应规则在 `FW_THEME_SUBFIELD_RULES`；
-- 字段名不必和站点一致，语义对上即可（尤其走 LLM 时）。
+- **自定义经历段落**：游戏公司问游戏经历、社区问志愿者经历——任意「对象数组」键都是合法列表，
+  插件会尝试自动认领；认不上时在 `sectionAliases` 里写一条「页面段落关键词 → 列表键」即可精准命中，
+  也可以配置 LLM 自动猜测。条目子键与页面字段名不必一致，语义对上即可（或交由 LLM 映射）。
+- `end: "至今"` 这类值：站点若是文本框可直接写入；若是日期控件会标为「需人工处理」。
+- 真实个人档案建议放在仓库外或 `profile.local.json`（已在 .gitignore 中），通过 JSON 页粘贴导入。
 
 ## 目录结构
 

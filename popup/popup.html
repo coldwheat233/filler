@@ -15,34 +15,46 @@
     <div id="plan-msg" class="msg"></div>
   </section>
 
-  <details id="sec-profile" open>
-    <summary>简历档案（JSON）</summary>
-    <textarea id="profile" spellcheck="false"></textarea>
-    <div class="row">
-      <button id="btn-save-profile" class="primary">保存简历</button>
-      <button id="btn-example">载入示例</button>
-      <span id="profile-msg" class="msg"></span>
-    </div>
-    <p class="hint">顶层列表键名建议用 <code>internships / projects / awards / educations</code>，
-      其他键名的列表会交给 LLM 猜测对应关系。基础字段放 <code>basic</code>、求职意向放 <code>expect</code>。</p>
-  </details>
+  <nav class="tabs" id="tabs">
+    <button data-tab="tab-basic" class="on">基本</button>
+    <button data-tab="tab-career">校招/求职</button>
+    <button data-tab="tab-lists">经历段落</button>
+    <button data-tab="tab-other">其他</button>
+    <button data-tab="tab-json">JSON</button>
+    <button data-tab="tab-llm">LLM</button>
+  </nav>
 
-  <details id="sec-llm">
-    <summary>LLM 设置（可选，语义匹配用）</summary>
-    <label>接口地址（OpenAI 兼容）<input id="llm-base" placeholder="https://api.deepseek.com/v1" /></label>
-    <label>模型<input id="llm-model" placeholder="deepseek-chat" /></label>
-    <label>API Key<input id="llm-key" type="password" placeholder="仅存本地" /></label>
-    <div class="row">
-      <button id="btn-save-llm" class="primary">保存 LLM 设置</button>
-      <span id="llm-msg" class="msg"></span>
+  <main>
+    <div id="tab-basic" class="tab on"></div>
+    <div id="tab-career" class="tab"></div>
+    <div id="tab-lists" class="tab"></div>
+    <div id="tab-other" class="tab"></div>
+    <div id="tab-json" class="tab">
+      <textarea id="json" spellcheck="false"></textarea>
+      <div class="row">
+        <button id="btn-json-apply" class="primary">应用 JSON → 表单</button>
+        <button id="btn-json-sync">表单 → 生成 JSON</button>
+        <span id="json-msg" class="msg"></span>
+      </div>
+      <p class="hint">JSON 是完整数据源：可在此增删任意字段、添加自定义经历列表
+        （如 <code>"games": [...]</code>）。自定义段落命名对不上时，在「其他」页配置别名关键词。</p>
     </div>
-    <p class="hint">不配置也能用：常见字段走内置规则匹配，匹配不到的会标出提醒人工填写。
-      配置后规则外的字段由大模型语义映射，选项匹配也支持大模型兜底。</p>
-  </details>
+    <div id="tab-llm" class="tab">
+      <label>接口地址（OpenAI 兼容）<input id="llm-base" placeholder="https://api.deepseek.com/v1" /></label>
+      <label>模型<input id="llm-model" placeholder="deepseek-chat" /></label>
+      <label>API Key<input id="llm-key" type="password" placeholder="仅存本地" /></label>
+      <div class="row"><button id="btn-save-llm" class="primary">保存 LLM 设置</button><span id="llm-msg" class="msg"></span></div>
+      <p class="hint">不配置也可用：内置规则匹配常见字段，其余在计划中标出人工补填；
+        配置后规则外字段走大模型语义匹配。</p>
+    </div>
+  </main>
 
   <footer>
-    <a id="link-demo" href="#">打开本地测试页</a>
-    <span class="dim">简历与 Key 仅存浏览器本地，不会上传</span>
+    <button id="btn-save" class="primary wide">💾 保存简历</button>
+    <div class="row">
+      <a id="link-demo" href="#" target="_blank">打开测试页</a>
+      <span id="save-msg" class="msg"></span>
+    </div>
   </footer>
 
   <script src="popup.js"></script>

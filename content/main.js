@@ -190,7 +190,16 @@ async function fwResolveTheme(rep, profile) {
     const v = profile[k];
     if (Array.isArray(v) && v.length && v[0] && typeof v[0] === "object" && !Array.isArray(v[0])) lists[k] = v;
   }
+  // 1) 用户在档案里写的自定义段落别名（sectionAliases: { "游戏经历": "games", ... }）优先
+  const aliases = profile.sectionAliases && typeof profile.sectionAliases === "object" ? profile.sectionAliases : {};
+  const themeText = fwNorm(rep.addText + " " + rep.fields.map((f) => f.label).join(" "));
+  for (const kw of Object.keys(aliases)) {
+    const key = aliases[kw];
+    if (lists[key] && fwNorm(kw) && themeText.includes(fwNorm(kw))) return key;
+  }
+  // 2) 内置主题
   if (rep.theme && lists[rep.theme]) return rep.theme;
+  // 3) LLM 猜测
   if (Object.keys(lists).length && (await fwHasLLM())) {
     const data = await fwLLMChatJSON(
       '把网页上的重复段落(经历类区块)映射到简历中对应的列表键。只输出 JSON：{"key": "列表键"} 或 {"key": null}',

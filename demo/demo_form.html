@@ -108,6 +108,44 @@
       </div>
     </div>
   </div>
+  <div class="form-item">
+    <div class="field-label">本科学校</div>
+    <div class="control"><input type="text" id="benke_school" name="benke_school" /></div>
+  </div>
+  <div class="form-item">
+    <div class="field-label">毕业学校</div>
+    <div class="control"><input type="text" id="graduate_school" name="graduate_school" /></div>
+  </div>
+  <div class="form-item">
+    <div class="field-label">英语等级</div>
+    <div class="control">
+      <select id="english_level" name="english_level">
+        <option value="">请选择</option>
+        <option>CET-4</option><option>CET-6</option><option>专业四级</option>
+        <option>专业八级</option><option>雅思</option><option>托福</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-item">
+    <div class="field-label">英语等级成绩（请填写分数）</div>
+    <div class="control"><input type="text" id="english_score" name="english_score" /></div>
+  </div>
+  <div class="form-item">
+    <div class="field-label">专业排名</div>
+    <div class="control">
+      <select id="rank" name="rank">
+        <option value="">请选择</option>
+        <option>前10%</option><option>前25%</option><option>前50%</option><option>其他</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-item">
+    <div class="field-label">应届/往届</div>
+    <div class="control radio-group">
+      <label><input type="radio" name="fresh" id="fresh-y" value="应届" />应届</label>
+      <label><input type="radio" name="fresh" id="fresh-n" value="往届" />往届</label>
+    </div>
+  </div>
 
   <h2>实习 / 工作经历（自定义式：每一格都是自由输入）</h2>
   <div id="exp-list">
@@ -168,12 +206,126 @@
   <button class="add-btn" id="award-add" type="button">添加获奖记录</button>
   <div class="tip">最多 5 条获奖记录</div>
 
+  <h2>语言能力（选择式 + 输入混合）</h2>
+  <div id="lang-list">
+    <div class="lang-item rep-block">
+      <div class="form-item">
+        <div class="field-label"><span class="req">*</span>语言类型</div>
+        <div class="control">
+          <select name="lang_type_0">
+            <option value="">请选择语言</option>
+            <option>英语</option><option>日语</option><option>法语</option><option>德语</option><option>其他</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-item">
+        <div class="field-label">相关证书等级/分数</div>
+        <div class="control"><input type="text" name="lang_score_0" placeholder="如 CET-6 550" /></div>
+      </div>
+      <div class="form-item">
+        <div class="field-label">掌握程度</div>
+        <div class="control">
+          <select name="lang_level_0">
+            <option value="">请选择程度</option>
+            <option>简单对话</option><option>日常会话</option><option>流利</option><option>精通</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+  <button class="add-btn" id="lang-add" type="button">添加语言能力</button>
+  <div class="tip">最多 5 门语言</div>
+
+  <h2>游戏经历（游戏公司常见，自定义式）</h2>
+  <div id="game-list">
+    <div class="game-item rep-block">
+      <div class="form-item">
+        <div class="field-label"><span class="req">*</span>游戏名称</div>
+        <div class="control"><input type="text" name="game_name_0" placeholder="请输入游戏名称" /></div>
+      </div>
+      <div class="form-item">
+        <div class="field-label">游戏时长</div>
+        <div class="control"><input type="text" name="game_hours_0" placeholder="如 单机时长 500h+ / 网游活跃 2年+" /></div>
+      </div>
+      <div class="form-item">
+        <div class="field-label">游玩程度</div>
+        <div class="control"><textarea name="game_depth_0" placeholder="以体验深度和热爱程度为标准"></textarea></div>
+      </div>
+    </div>
+  </div>
+  <button class="add-btn" id="game-add" type="button">添加游戏经历</button>
+  <div class="tip">最多 5 条游戏经历</div>
+
+  <h2>附加问题</h2>
+  <div class="form-item">
+    <div class="field-label">是否愿意服从公司分配</div>
+    <div class="control radio-group">
+      <label><input type="radio" name="obey" id="obey-y" value="是" />是</label>
+      <label><input type="radio" name="obey" id="obey-n" value="否" />否</label>
+    </div>
+  </div>
+  <div class="form-item">
+    <div class="field-label">是否接受外派</div>
+    <div class="control radio-group">
+      <label><input type="radio" name="dispatch" id="dispatch-y" value="是" />是</label>
+      <label><input type="radio" name="dispatch" id="dispatch-n" value="否" />否</label>
+    </div>
+  </div>
+
   <h2>其他</h2>
+  <div class="form-item">
+    <div class="field-label">自我描述</div>
+    <div class="control"><textarea id="selfdesc" name="selfdesc" placeholder="自我评价/自我介绍"></textarea></div>
+  </div>
   <div class="form-item">
     <div class="field-label">备注</div>
     <div class="control"><textarea id="note" placeholder="选填：其他需要说明的情况"></textarea></div>
   </div>
 </div>
+
+<template id="lang-tpl">
+  <div class="lang-item rep-block">
+    <div class="form-item">
+      <div class="field-label"><span class="req">*</span>语言类型</div>
+      <div class="control">
+        <select name="lang_type_{i}">
+          <option value="">请选择语言</option>
+          <option>英语</option><option>日语</option><option>法语</option><option>德语</option><option>其他</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-item">
+      <div class="field-label">相关证书等级/分数</div>
+      <div class="control"><input type="text" name="lang_score_{i}" placeholder="如 CET-6 550" /></div>
+    </div>
+    <div class="form-item">
+      <div class="field-label">掌握程度</div>
+      <div class="control">
+        <select name="lang_level_{i}">
+          <option value="">请选择程度</option>
+          <option>简单对话</option><option>日常会话</option><option>流利</option><option>精通</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="game-tpl">
+  <div class="game-item rep-block">
+    <div class="form-item">
+      <div class="field-label"><span class="req">*</span>游戏名称</div>
+      <div class="control"><input type="text" name="game_name_{i}" placeholder="请输入游戏名称" /></div>
+    </div>
+    <div class="form-item">
+      <div class="field-label">游戏时长</div>
+      <div class="control"><input type="text" name="game_hours_{i}" placeholder="如 单机时长 500h+ / 网游活跃 2年+" /></div>
+    </div>
+    <div class="form-item">
+      <div class="field-label">游玩程度</div>
+      <div class="control"><textarea name="game_depth_{i}" placeholder="以体验深度和热爱程度为标准"></textarea></div>
+    </div>
+  </div>
+</template>
 
 <template id="exp-tpl">
   <div class="exp-item rep-block">
@@ -247,6 +399,8 @@
   }
   document.getElementById("exp-add").addEventListener("click", () => fwDemoAdd("exp-tpl", "exp-list", 3));
   document.getElementById("award-add").addEventListener("click", () => fwDemoAdd("award-tpl", "award-list", 5));
+  document.getElementById("lang-add").addEventListener("click", () => fwDemoAdd("lang-tpl", "lang-list", 5));
+  document.getElementById("game-add").addEventListener("click", () => fwDemoAdd("game-tpl", "game-list", 5));
 
   // ---------- 自定义下拉 ----------
   document.querySelectorAll(".select").forEach((box) => {

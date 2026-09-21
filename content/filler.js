@@ -2,8 +2,18 @@
 // 全部走原生 DOM 事件（input/change + React 的 value setter），
 // 避免 Vue/React 受控组件“值变了但框架不知道”的问题。
 
+// 后台/被遮挡标签页的 setTimeout 会被浏览器节流（最低 1 次/秒，极端 1 次/分），
+// 填报流程大量依赖短 sleep，被节流就会像假死。MessageChannel 宏任务不受节流。
 function fwSleep(ms) {
-  return new Promise((r) => setTimeout(r, ms));
+  return new Promise((resolve) => {
+    const start = performance.now();
+    (function tick() {
+      if (performance.now() >= start + ms) return resolve();
+      const ch = new MessageChannel();
+      ch.port1.onmessage = () => { ch.port1.close(); tick(); };
+      ch.port2.postMessage(0);
+    })();
+  });
 }
 
 function fwAsDate(value) {
@@ -112,9 +122,14 @@ async function fwFillField(field, value, log) {
     case "textarea":
       fwSetNativeValue(field.el, String(value));
       return { ok: true, msg: "ok" };
-    case "date":
+    case "date": {
+      // 「至今/至今有效」类结束时间在多数站点是勾选框或需手动选，如实标注人工处理
+      if (/至今|now|current|present/i.test(String(value))) {
+        return { ok: false, msg: "「至今」类结束时间需人工勾选/选择" };
+      }
       fwSetNativeValue(field.el, fwAsDate(value));
       return { ok: true, msg: "ok" };
+    }
     case "select":
       return fwFillSelect(field.el, value);
     case "radiogroup":
