@@ -112,6 +112,8 @@ const FWPanel = (() => {
 
   function renderPanel(steps, cbs) {
     ensureHost();
+    _done = false;
+    sumEl.style.color = "";
     onConfirmCb = cbs && cbs.onConfirm;
     listEl.innerHTML = "";
     host.style.display = "block";
@@ -143,6 +145,7 @@ const FWPanel = (() => {
   }
 
   async function onGo() {
+    if (_done) { close(); return; } // 填报完成后按钮变为「关闭面板」
     const selected = [];
     for (const st of currentSteps()) {
       if (st._ck) {
@@ -162,10 +165,11 @@ const FWPanel = (() => {
     }
     go.disabled = false;
     go.textContent = "关闭面板";
-    go.onclick = close;
+    _done = true;
   }
 
   let _steps = [];
+  let _done = false;
   function currentSteps() { return _steps; }
 
   function statusText(st, text, cls) {
