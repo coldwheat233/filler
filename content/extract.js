@@ -9,6 +9,11 @@ function fwVisible(el) {
   return st.visibility !== "hidden" && st.display !== "none";
 }
 
+// 参与段落/字段识别的可填控件：排除 radio/checkbox，
+// 否则「单选组」「并排日期格」会被误判成重复段落
+const FW_CONTROL_FILL =
+  'input:not([type=hidden]):not([type=submit]):not([type=button]):not([type=image]):not([type=file]):not([type=radio]):not([type=checkbox]),textarea,select';
+
 function fwKindOf(el) {
   if (el.tagName === "SELECT") return "select";
   if (el.tagName === "TEXTAREA") return "textarea";
@@ -133,12 +138,10 @@ function fwDomOrder(a, b) {
 }
 
 function fwCollectItemFields(item) {
-  const CONTROL = 'input:not([type=hidden]):not([type=submit]):not([type=button]):not([type=image]):not([type=file]),textarea,select';
+  const CONTROL = FW_CONTROL_FILL;
   const fields = [];
   item.querySelectorAll(CONTROL).forEach((el) => {
     if (!fwVisible(el)) return;
-    const type = (el.getAttribute("type") || "").toLowerCase();
-    if (type === "radio" || type === "checkbox") return;
     const kind = fwKindOf(el);
     const label = fwLabelFor(el);
     fields.push({
@@ -189,7 +192,7 @@ function extractForm() {
       const key = parent.tagName + "|" + el.tagName + "|" + cls;
       if (seen.has(key)) return;
       seen.add(key);
-      if (el.querySelectorAll(CONTROL).length < 2) return; // 单控件包装不算段落
+      if (el.querySelectorAll(FW_CONTROL_FILL).length < 2) return; // 单控件包装不算段落
       groups.push({ el, parent, cls, items });
     });
     // 外层优先：嵌套在已收条目内部的组丢弃
@@ -202,7 +205,7 @@ function extractForm() {
     // 「添加」按钮全局配对：候选按钮与段落都按 DOM 顺序排，一一对应
     const excludeEls = kept.flatMap((g) => g.items);
     const cands = fwCollectAddCandidates(excludeEls, CONTROL);
-    kept.sort(fwDomOrder);
+    kept.sort((a, b) => fwDomOrder(a.el, b.el));
     cands.sort((x, y) => fwDomOrder(x.el, y.el));
     const btnFor = new Map();
     if (cands.length && cands.length === kept.length) {
@@ -278,8 +281,11 @@ function extractForm() {
     byName.forEach((radios) => {
       const first = radios[0];
       const grp = first.closest(".form-group, .ant-form-item, .el-form-item, .field, .form-item, td, li, .item");
-      let gLabel = grp && grp.querySelectorAll("input[type=radio]").length === radios.length ? fwCleanCloneText(grp) : "";
-      if (!gLabel) gLabel = fwSiblingText(first);
+      // 先取单选组前方兄弟文本（干净），拿不到再退回整组清理文本（会混入选项文字）
+      let gLabel = fwSiblingText(first);
+      if (!gLabel && grp && grp.querySelectorAll("input[type=radio]").length === radios.length) {
+        gLabel = fwCleanCloneText(grp);
+      }
       fields.push({
         key: "g" + fields.length, el: first, style: "radiogroup", tag: "input",
         id: "", name: first.name || "", label: gLabel.slice(0, 60),

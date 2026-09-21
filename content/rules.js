@@ -51,9 +51,11 @@ const FW_THEME_SUBFIELD_RULES = {
     ["description", ["描述", "内容", "简介", "业绩", "description"]],
   ],
   awards: [
-    ["name", ["奖项", "名称", "获奖", "荣誉", "award", "name"]],
-    ["level", ["等级", "级别", "level"]],
-    ["date", ["时间", "日期", "年月", "date"]],
+    // 具体字段放前面：裸「获奖/名称」这类宽泛词放最后兜底，
+    // 否则「获奖等级」「获奖时间」都会先被 name 的「获奖」吃掉
+    ["level", ["获奖等级", "等级", "级别", "level"]],
+    ["date", ["获奖时间", "时间", "日期", "年月", "date"]],
+    ["name", ["奖项名称", "奖项", "名称", "荣誉", "award", "name"]],
     ["description", ["描述", "说明", "description"]],
   ],
   educations: [
@@ -71,12 +73,24 @@ function fwNorm(s) {
   return (s == null ? "" : String(s)).toLowerCase().replace(FW_FILTH, "").replace(/\s+/g, " ").trim();
 }
 
+function fwContainsKeyword(text, kw) {
+  // ASCII 关键词按词元匹配：避免 name 命中 name@domain.com、tel 命中 hotel 之类
+  if (/[a-z]/i.test(kw)) {
+    const esc = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp("(^|[^a-z0-9])" + esc + "([^a-z0-9]|$)").test(text);
+  }
+  return text.includes(kw);
+}
+
 function fwMatchByRules(label, name, extra) {
-  const fields = [fwNorm(label), fwNorm(extra), fwNorm(name)];
-  for (const [path, keywords] of FW_RULES) {
-    for (const kw of keywords) {
-      for (const f of fields) {
-        if (f && f.includes(kw)) return path;
+  // 整表先扫 label，再 name，最后 placeholder：标签的优先级必须整体高于占位符，
+  // 否则占位符文本会抢在真正 label 之前命中其他字段（如 name@domain.com → 姓名）
+  const fields = [fwNorm(label), fwNorm(name), fwNorm(extra)];
+  for (const f of fields) {
+    if (!f) continue;
+    for (const [path, keywords] of FW_RULES) {
+      for (const kw of keywords) {
+        if (fwContainsKeyword(f, kw)) return path;
       }
     }
   }

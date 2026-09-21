@@ -24,16 +24,20 @@ function fwSetNativeValue(el, value) {
   el.dispatchEvent(new Event("blur", { bubbles: true }));
 }
 
-function fwClickLikeUser(el) {
-  // 先补 mousedown/mouseup：antd 的下拉靠 mousedown 展开
+function fwClickLikeUser(el, opts) {
+  // 先补 mousedown/mouseup：antd 的下拉靠 mousedown 展开。
+  // opts.bubble=false 用于下拉触发器：事件不冒泡，避免页面「点击空白处关闭面板」
+  // 的全局监听把我们刚展开的面板立刻关掉（触发器自身的监听仍会触发）。
+  const bubble = !(opts && opts.bubble === false);
   const rect = el.getBoundingClientRect();
-  const opts = {
-    bubbles: true, cancelable: true, view: window,
+  const mouseOpts = {
+    bubbles: bubble, cancelable: true, view: window,
     clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2,
   };
-  el.dispatchEvent(new MouseEvent("mousedown", opts));
-  el.dispatchEvent(new MouseEvent("mouseup", opts));
-  el.click();
+  el.dispatchEvent(new MouseEvent("mousedown", mouseOpts));
+  el.dispatchEvent(new MouseEvent("mouseup", mouseOpts));
+  if (bubble) el.click();
+  else el.dispatchEvent(new MouseEvent("click", mouseOpts));
 }
 
 const FW_OPTION_SEL = 'li,[role=option],.el-select-dropdown__item,.ant-select-item-option,.select-option,[class*="dropdown-menu"] li,[class*="options"] li,[class*="menu"] li';
@@ -51,7 +55,7 @@ function fwVisibleOptionTexts() {
 }
 
 async function fwFillDropdown(triggerEl, value, log) {
-  fwClickLikeUser(triggerEl);
+  fwClickLikeUser(triggerEl, { bubble: false });
   // 等待选项面板渲染
   let texts = [];
   for (let i = 0; i < 12; i++) {

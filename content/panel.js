@@ -22,7 +22,8 @@ const FWPanel = (() => {
     if (host && host.isConnected) return;
     host = document.createElement("div");
     host.id = "fw-panel-host";
-    host.style.cssText = "position:fixed;top:16px;right:16px;z-index:2147483647;all:initial;";
+    // 注意不要写 all:initial，它会把 position 一起重置成 static，面板就会掉到页面末尾
+    host.style.cssText = "position:fixed;top:16px;right:16px;z-index:2147483647;margin:0;padding:0;border:0;width:auto;height:auto;float:none;";
     document.documentElement.appendChild(host);
     root = host.attachShadow({ mode: "open" });
     root.innerHTML = `
@@ -88,11 +89,18 @@ const FWPanel = (() => {
     const badge = STYLE_BADGE[st.style] || ["", "b-gray"];
     const note = st.note ? `<span class="note">${esc(st.note)}</span>` : "";
     const sub = [st.method, note].filter(Boolean).join("　");
-    if (st.kind === "add_blocks" || st.kind === "info") {
-      const icon = st.kind === "info" ? "⚠" : "◆";
-      return `<div class="row ${st.kind === "info" ? "info" : "section"}">
-        <div class="main"><div class="line1">${icon} <span class="lab">${esc(st.label)}</span>
-        ${st.kind === "add_blocks" ? `<span class="badge ${badge[1]}">${badge[0]}</span>` : ""}</div>
+    if (st.kind === "add_blocks") {
+      const need = Number(st.value || 0);
+      // 需要点击时必须有复选框参与勾选执行；无需添加时仅作说明行展示
+      const ck = need > 0 ? '<span class="ck"><input type="checkbox" checked></span>' : "";
+      return `<div class="row section">${ck}
+        <div class="main"><div class="line1">◆ <span class="lab">${esc(st.label)}</span>
+        <span class="badge ${badge[1]}">${badge[0]}</span></div>
+        <div class="line2">${esc(st.note || "")}</div></div><div class="status"></div></div>`;
+    }
+    if (st.kind === "info") {
+      return `<div class="row info">
+        <div class="main"><div class="line1">⚠ <span class="lab">${esc(st.label)}</span></div>
         <div class="line2">${esc(st.note || "")}</div></div><div class="status"></div></div>`;
     }
     return `<div class="row">

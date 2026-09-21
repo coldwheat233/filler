@@ -126,6 +126,16 @@ async function fwBuildSteps(form, profile) {
     steps.push(st);
   }
 
+  // 未匹配字段也提示出来（保持留空、人工填写），与 README 描述一致
+  const unmatchedTop = form.fields.filter((f) => !f.path).map((f) => f.label || f.name || f.key);
+  if (unmatchedTop.length) {
+    steps.push({
+      kind: "info", style: "section",
+      label: `${unmatchedTop.length} 个字段未能匹配（保持留空，人工填写）`,
+      note: unmatchedTop.join("、"),
+    });
+  }
+
   // 2) 重复段落（经历类）
   for (const rep of form.repeaters) {
     const theme = await fwResolveTheme(rep, profile);
