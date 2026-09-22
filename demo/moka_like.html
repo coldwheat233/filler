@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>Moka 结构模拟测试页</title>
+<style>
+  body { font: 14px/1.6 "Microsoft YaHei", sans-serif; background: #f0f2f5; }
+  .wrap { max-width: 680px; margin: 30px auto; background: #fff; border-radius: 8px; padding: 24px 32px; }
+  .module { margin-bottom: 26px; }
+  .module-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .module-title { font-weight: 600; }
+  .sd-btn { cursor: pointer; border: 1px solid #1a73e8; background: #f5f9ff; color: #1a73e8; border-radius: 4px; padding: 4px 14px; }
+  .apply-fields { display: block; }
+  .apply-field { padding: 8px 0; }
+  .title { width: 110px; display: inline-block; color: #555; vertical-align: top; padding-top: 5px; }
+  .ctrl { display: inline-block; width: calc(100% - 120px); }
+  .ctrl input, .ctrl textarea { width: 100%; border: 1px solid #d0d7de; border-radius: 6px; padding: 6px 10px; font-size: 13px; box-sizing: border-box; }
+  .ctrl textarea { min-height: 54px; }
+  .sel-container { display: flex; gap: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- 姓名：普通（非 multi）字段 -->
+  <div class="module">
+    <div class="module-header"><span class="module-title">姓名</span></div>
+    <div class="apply-fields-single">
+      <div class="apply-field-abc string_info">
+        <span class="title-xyz"><span><span>姓名</span></span></span>
+        <span class="ctrl"><input type="text" id="realname" placeholder="姓名" /></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 获奖经历：multi 模块，字段平铺；标题第 N 次出现 = 第 N 条 -->
+  <div class="module">
+    <div class="module-header">
+      <span class="module-title">获奖经历</span>
+      <button type="button" class="sd-btn" id="award-add"><span class="icon-add">＋</span><span><span>添加</span></span></button>
+    </div>
+    <div class="apply-fields-Q2iJ multi-NTCD">
+      <div class="apply-field-1 date_info-UOJ apply-padding">
+        <span class="title-IWWQ"><span><span>获奖时间</span></span></span>
+        <span class="ctrl sel-container"><input type="text" placeholder="年" data-part="y" /><input type="text" placeholder="月" data-part="m" /></span>
+      </div>
+      <div class="apply-field-2 string_info-UOJ apply-padding">
+        <span class="title-IWWQ"><span><span>奖项名称</span></span></span>
+        <span class="ctrl"><input type="text" placeholder="奖项名称" /></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 项目经验：multi 模块 -->
+  <div class="module">
+    <div class="module-header">
+      <span class="module-title">项目经验</span>
+      <button type="button" class="sd-btn" id="proj-add"><span><span>添加</span></span></button>
+    </div>
+    <div class="apply-fields-AAAA multi-BBBB">
+      <div class="apply-field-3 string_info-CIC apply-padding">
+        <span class="title-IWWQ"><span><span>项目名称</span></span></span>
+        <span class="ctrl"><input type="text" placeholder="项目名称" /></span>
+      </div>
+      <div class="apply-field-4 string_info-CIC apply-padding">
+        <span class="title-IWWQ"><span><span>项目中职责</span></span></span>
+        <span class="ctrl"><input type="text" placeholder="项目中职责" /></span>
+      </div>
+      <div class="apply-field-5 text_info-CIC apply-padding">
+        <span class="title-IWWQ"><span><span>项目描述</span></span></span>
+        <span class="ctrl"><textarea placeholder="项目描述"></textarea></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<template id="award-tpl">
+  <div class="apply-field-1 date_info-UOJ apply-padding">
+    <span class="title-IWWQ"><span><span>获奖时间</span></span></span>
+    <span class="ctrl sel-container"><input type="text" placeholder="年" data-part="y" /><input type="text" placeholder="月" data-part="m" /></span>
+  </div>
+  <div class="apply-field-2 string_info-UOJ apply-padding">
+    <span class="title-IWWQ"><span><span>奖项名称</span></span></span>
+    <span class="ctrl"><input type="text" placeholder="奖项名称" /></span>
+  </div>
+</template>
+
+<template id="proj-tpl">
+  <div class="apply-field-3 string_info-CIC apply-padding">
+    <span class="title-IWWQ"><span><span>项目名称</span></span></span>
+    <span class="ctrl"><input type="text" placeholder="项目名称" /></span>
+  </div>
+  <div class="apply-field-4 string_info-CIC apply-padding">
+    <span class="title-IWWQ"><span><span>项目中职责</span></span></span>
+    <span class="ctrl"><input type="text" placeholder="项目中职责" /></span>
+  </div>
+  <div class="apply-field-5 text_info-CIC apply-padding">
+    <span class="title-IWWQ"><span><span>项目描述</span></span></span>
+    <span class="ctrl"><textarea placeholder="项目描述"></textarea></span>
+  </div>
+</template>
+
+<script>
+  document.getElementById("award-add").addEventListener("click", () => {
+    const box = document.querySelector(".apply-fields-Q2iJ");
+    document.querySelectorAll("#award-tpl").length &&
+      document.getElementById("award-tpl").content.childNodes.forEach(() => {});
+    [...document.getElementById("award-tpl").content.children].forEach(() => {});
+    const frag = document.getElementById("award-tpl").content;
+    [...frag.children].forEach((n) => box.appendChild(n.cloneNode(true)));
+  });
+  document.getElementById("proj-add").addEventListener("click", () => {
+    const box = document.querySelector(".apply-fields-AAAA");
+    const frag = document.getElementById("proj-tpl").content;
+    [...frag.children].forEach((n) => box.appendChild(n.cloneNode(true)));
+  });
+</script>
+</body>
+</html>

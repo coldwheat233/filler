@@ -93,7 +93,7 @@ const FW_REPEATER_THEMES = [
   ["internships", ["实习", "工作经历", "工作经验", "工作", "internship", "work experience"]],
   ["projects", ["项目", "project"]],
   ["awards", ["获奖", "奖项", "荣誉", "奖学金", "award", "honor"]],
-  ["educations", ["教育", "学习经历", "学历", "education"]],
+  ["educations", ["教育", "学习经历", "学历", "学校", "专业", "education"]],
   ["languages", ["语言能力", "语言", "language"]],
   ["researches", ["研究成果", "专利", "论文", "研究", "research", "publication"]],
   ["games", ["游戏经历", "游戏", "game"]],

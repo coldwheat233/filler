@@ -23,6 +23,12 @@ function fwAsDate(value) {
   return v.replace(/[./]/g, "-");
 }
 
+// 年/月拆分字段的取值：idx 0 取年，1 取月（Moka 的 month-range-select）
+function fwSplitDate(value, idx) {
+  const parts = String(value == null ? "" : value).trim().split("-");
+  return parts[idx] != null ? parts[idx] : String(value);
+}
+
 // React 重写 value 后会吞掉赋值，必须用原生 setter 再派发 input
 function fwSetNativeValue(el, value) {
   const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
@@ -167,6 +173,8 @@ function fwReadBack(field) {
       case "checkbox":
         return field.el.checked ? "是" : "否";
       case "dropdown":
+        // 自定义下拉的触发器可能是 input（Moka sd-Select）也可能是 div
+        if (field.el.tagName === "INPUT") return field.el.value;
         return (field.el.innerText || field.el.textContent || "").replace(/\s+/g, " ").trim();
       default:
         return "";

@@ -364,12 +364,15 @@ async function fwExecute(selected) {
     try {
       let field = st.field;
       if (st.kind === "fill_item") {
-        const el = fwItemFieldEl(st.rep, st.itemIdx, st.field);
+        const el = fwLocateItemField(st.rep, st.itemIdx, st.field);
         if (!el) { FWPanel.status(st, "× 未定位到控件", "fail"); continue; }
         field = Object.assign({}, st.field, { el });
       }
-      const r = await fwFillField(field, st.value);
+      // 年/月拆分字段（Moka 等）：从 "2022-10" 里取对应部分填写
+      const fillValue = st.field.splitDate ? fwSplitDate(st.value, st.field.sub) : st.value;
+      const r = await fwFillField(field, fillValue);
       st.filled = r.ok;
+      st.fillValue = String(fillValue);
       FWPanel.status(st, (r.ok ? "√ " : "× ") + r.msg, r.ok ? "ok" : "fail");
       await fwSleep(150);
     } catch (e) {
@@ -393,12 +396,12 @@ async function fwExecute(selected) {
     if (st.filled === undefined) continue;
     let field = st.field;
     if (st.kind === "fill_item") {
-      const el = fwItemFieldEl(st.rep, st.itemIdx, st.field);
+      const el = fwLocateItemField(st.rep, st.itemIdx, st.field);
       if (!el) { verify.push([st.label, "× 未定位到控件"]); continue; }
       field = Object.assign({}, st.field, { el });
     }
     const cur = fwReadBack(field);
-    const expect = String(st.value);
+    const expect = String(st.fillValue || st.value);
     const good = !!cur && (cur.includes(expect) || expect.includes(cur));
     verify.push([st.label, good ? "√ " + cur.slice(0, 30) : `× 期望「${expect.slice(0, 20)}」实际「${cur.slice(0, 20)}」`]);
   }

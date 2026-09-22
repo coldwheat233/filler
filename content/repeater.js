@@ -33,7 +33,19 @@ async function fwEnsureCount(rep, n) {
   return added;
 }
 
-// 定位第 i 块中的字段控件：克隆块结构一致，用 relPath 在对应块里重新找
+// 定位第 i 块中的字段控件：克隆块结构一致，用 relPath 在对应块里重新找。
+// 站点适配器（如 Moka）提供 locateField 时优先走适配器。
+function fwLocateItemField(rep, itemIdx, field) {
+  if (rep.locateField) {
+    try {
+      return rep.locateField(itemIdx, field);
+    } catch (e) {
+      return null;
+    }
+  }
+  return fwItemFieldEl(rep, itemIdx, field);
+}
+
 function fwItemFieldEl(rep, itemIdx, field) {
   const items = rep.getItems();
   const item = items[itemIdx];

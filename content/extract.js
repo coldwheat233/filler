@@ -131,6 +131,103 @@ function fwRadioOptionLabel(r) {
   return String(r.value || "").trim();
 }
 
+// ---------- Moka HR (mokahr.com) 站点适配 ----------
+// Moka 的可重复模块不是「克隆块」：每个字段是独立的 div.apply-field 平铺在
+// div.apply-fields.multi 容器里，第 N 条经历 = 各字段标题的第 N 次出现。
+// 这里生成「虚拟段落」：locateField(第几条, 字段) 按标题第 N 次出现定位控件。
+
+function fwMokaTitleOf(fd) {
+  const t = fd.querySelector('[class*="title"]');
+  return t ? (t.innerText || "").replace(/\s+/g, " ").trim() : "";
+}
+
+function fwMokaInputs(fd) {
+  return [...fd.querySelectorAll("input, textarea")].filter((el) => {
+    const t = (el.getAttribute("type") || "text").toLowerCase();
+    return !["hidden", "checkbox", "radio", "file", "submit", "button"].includes(t) && fwVisible(el);
+  });
+}
+
+function fwMokaIsDropdown(fd) {
+  return !!fd.querySelector('[class*="Select-container"]');
+}
+
+function fwDetectMoka(repeaters, mokaContainers) {
+  const containers = [...document.querySelectorAll('div[class*="apply-fields"]')]
+    .filter((c) => /multi/.test(c.className) && fwVisible(c) && c.querySelector('[class*="apply-field"]'));
+  containers.forEach((container) => {
+    try {
+      const fieldDivs = () => [...container.children].filter((d) => d.matches('div[class*="apply-field"]'));
+      // 一条记录的字段序列：按文档序走到第一个重复标题为止
+      const defs = [];
+      const seen = new Set();
+      for (const fd of fieldDivs()) {
+        const title = fwMokaTitleOf(fd);
+        if (!title || seen.has(title)) break;
+        seen.add(title);
+        const inputs = fwMokaInputs(fd);
+        const isDD = fwMokaIsDropdown(fd);
+        inputs.forEach((inp, sub) => {
+          defs.push({
+            mokaTitle: title, sub, el: inp,
+            style: isDD ? "dropdown" : fwKindOf(inp),
+            splitDate: inputs.length > 1, // 年/月拆分的日期
+            label: title + (inputs.length > 1 ? (sub === 0 ? "（年）" : "（月）") : ""),
+          });
+        });
+      }
+      if (!defs.length) return;
+      const firstTitle = defs[0].mokaTitle;
+      const entryCount = () => fieldDivs().filter((fd) => fwMokaTitleOf(fd) === firstTitle).length;
+      // 添加按钮：模块容器父级范围内、容器外的「添加」按钮
+      let addBtn = null;
+      let root = container.parentElement;
+      for (let up = 0; up < 3 && root && !addBtn; up++) {
+        root.querySelectorAll("button, a, span, [role=button]").forEach((b) => {
+          if (addBtn || container.contains(b) || !fwVisible(b)) return;
+          const txt = (b.innerText || b.title || "").replace(/\s+/g, " ").trim();
+          if (txt && txt.length <= 8 && /^(添加|新增|增加)/.test(txt)) addBtn = b;
+        });
+        root = root.parentElement;
+      }
+      const rep = {
+        key: "m" + repeaters.length,
+        sig: "moka|" + defs.map((d) => d.mokaTitle).join("/"),
+        addBtn: addBtn,
+        addText: addBtn ? ((addBtn.innerText || addBtn.title || "添加") + "").replace(/\s+/g, " ").trim() : "",
+        theme: null,
+        count: entryCount(),
+        getItems: function () {
+          return Array.from({ length: entryCount() }, (_, i) => ({ __mokaEntry: i }));
+        },
+        locateField: function (itemIdx, field) {
+          const divs = fieldDivs().filter((fd) => fwMokaTitleOf(fd) === field.mokaTitle);
+          const fd = divs[itemIdx];
+          if (!fd) return null;
+          const inputs = fwMokaInputs(fd);
+          return inputs[field.sub] || inputs[0] || null;
+        },
+        fields: [],
+      };
+      defs.forEach((d, i) => {
+        rep.fields.push({
+          key: "mf" + i, el: d.el, relPath: null,
+          style: d.style, tag: d.style === "dropdown" ? "div" : d.el.tagName.toLowerCase(),
+          id: d.el.id || "", name: d.el.getAttribute("name") || "",
+          label: d.label, placeholder: d.el.getAttribute("placeholder") || "",
+          required: false, options: null,
+          mokaTitle: d.mokaTitle, sub: d.sub, splitDate: d.splitDate,
+          sig: d.label + "|" + d.mokaTitle + "|" + d.style,
+        });
+      });
+      const themeText = rep.addText + " " + rep.fields.map((f) => f.label).join(" ");
+      rep.theme = fwMatchRepeaterTheme(themeText);
+      repeaters.push(rep);
+      mokaContainers.push(container);
+    } catch (e) { /* 单模块失败不影响其他模块 */ }
+  });
+}
+
 // ---------- 重复段落识别：同 tag+class 的兄弟块，块内 >=2 个控件 ----------
 // 「添加」按钮是全局配对的：多个段落时按 DOM 顺序与段落一一对应，避免把
 // 「添加获奖记录」误配给实习段落（旧版按文案最短挑选会配错）。
@@ -162,11 +259,14 @@ function fwCollectAddCandidates(itemEls, CONTROL) {
       const strongText = /添加\s*(一条|新)?\s*(教育|工作|实习|项目|获奖|竞赛|语言|研究|游戏|成员|经历|记录|能力|活动|实践|成果)/.test(txt);
       if (!FW_ADD_CLASS.test(meta) && !strongText) return;
     }
-    const innerChild = Array.from(b.children).some((c) => {
-      const t = (c.innerText || c.title || "").replace(/\s+/g, " ").trim();
-      return t && t.length <= 14 && (FW_ADD_PAT.test(t) || FW_PLUS_ONLY.test(t));
-    });
-    if (innerChild) return; // 只收叶子级按钮
+    const innerChildFilterRemoved = true; // 旧「子元素文本像添加就跳过」过滤会误杀文字包 span 的样式化按钮，已废弃
+    void innerChildFilterRemoved;
+    // 非交互元素的去重：内部已有真按钮 / 自己包着真按钮的，都让位给 <button>/<a>/<role=button>
+    const isInteractive = b.tagName === "BUTTON" || b.tagName === "A" || b.tagName === "INPUT" || b.getAttribute("role") === "button";
+    if (!isInteractive) {
+      if (b.closest("button, a, [role=button]")) return;        // 是按钮内部的内容 span
+      if (b.querySelector("button, a, [role=button]")) return;  // 是包着按钮的外层容器
+    }
     out.push({ el: b, txt });
   });
   return out;
@@ -217,10 +317,15 @@ function extractForm() {
   const repeaters = [];
   let excludeParents = [];
   let softRepeaters = [];
+  // 站点适配器先行：Moka HR 的模块结构特殊（字段平铺、按标题第 N 次出现分条），
+  // 由适配器生成虚拟段落；其容器从标准检测与顶层字段中排除
+  const mokaContainers = [];
+  fwDetectMoka(repeaters, mokaContainers);
   (function detect() {
     const seen = new Set();
     const groups = [];
     document.querySelectorAll("body *").forEach((el) => {
+      if (mokaContainers.some((c) => c.contains(el))) return; // Moka 适配器已接管
       if (el.matches(CONTROL + ",button,a,label,option,template")) return;
       const cls = (typeof el.className === "string" ? el.className : (el.getAttribute("class") || "")).trim();
       if (!cls) return;
@@ -309,7 +414,7 @@ function extractForm() {
       rep.theme = fwMatchRepeaterTheme(themeText);
       repeaters.push(rep);
     });
-    excludeParents = real.map((g) => g.parent);
+    excludeParents = real.map((g) => g.parent).concat(mokaContainers);
     softRepeaters = soft;
   })();
 
