@@ -12,7 +12,16 @@ async function fwEnsureCount(rep, n) {
   let failedClicks = 0;
   while (rep.getItems().length < n) {
     const before = rep.getItems().length;
-    const btn = rep.addBtn;
+    // 适配器（getAddBtn）每次实时重找按钮——重渲染后旧按钮会作废
+    const btn = rep.getAddBtn ? rep.getAddBtn() : rep.addBtn;
+    if (!btn || !btn.isConnected) {
+      failedClicks++;
+      if (failedClicks >= 3) {
+        throw new Error("未找到可用的「添加」按钮（可能已达上限 " + before + " 条）。可手动点一次「添加」后重新生成计划");
+      }
+      await fwSleep(400);
+      continue;
+    }
     btn.scrollIntoView({ block: "center" });
     fwClickLikeUser(btn);
     // 轮询等待块数 +1（上限 5 秒）；没涨可能是框架还没响应，重试点击（最多 3 次）

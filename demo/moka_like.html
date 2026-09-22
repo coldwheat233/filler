@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8" />
-<title>Moka 结构模拟测试页</title>
+<title>Moka 结构模拟测试页（重渲染 + 可搜索下拉）</title>
 <style>
   body { font: 14px/1.6 "Microsoft YaHei", sans-serif; background: #f0f2f5; }
   .wrap { max-width: 680px; margin: 30px auto; background: #fff; border-radius: 8px; padding: 24px 32px; }
@@ -15,12 +15,14 @@
   .ctrl { display: inline-block; width: calc(100% - 120px); }
   .ctrl input, .ctrl textarea { width: 100%; border: 1px solid #d0d7de; border-radius: 6px; padding: 6px 10px; font-size: 13px; box-sizing: border-box; }
   .ctrl textarea { min-height: 54px; }
-  .sel-container { display: flex; gap: 8px; }
+  .sel-row { display: flex; gap: 8px; }
+  .sel-row .ctrl { flex: 1; width: auto; }
   .sd-select-input { cursor: pointer; }
   .sd-portal { position: absolute; background: #fff; border: 1px solid #dfe3ea; border-radius: 6px;
-    box-shadow: 0 6px 16px rgba(0,0,0,.15); z-index: 9999; }
+    box-shadow: 0 6px 16px rgba(0,0,0,.15); z-index: 9999; max-height: 220px; overflow: auto; }
   .sd-portal-item { padding: 7px 12px; cursor: pointer; }
   .sd-portal-item:hover { background: #f0f6ff; }
+  .entry { border-bottom: 1px dashed #eee; padding-bottom: 6px; margin-bottom: 6px; }
 </style>
 </head>
 <body>
@@ -36,111 +38,232 @@
     </div>
   </div>
 
-  <!-- 获奖经历：multi 模块 + Moka 式下拉（mousedown 展开 / click 收起 / body 门户 div 选项） -->
+  <!-- 教育背景：可搜索下拉（打字过滤） -->
+  <div class="module">
+    <div class="module-header">
+      <span class="module-title">教育背景</span>
+      <button type="button" class="sd-btn" id="edu-add"><span><span>添加</span></span></button>
+    </div>
+    <div class="apply-fields-EDU multi-XYZ" id="edu-container">
+      <div class="entry">
+        <div class="apply-field-6 select_searchable apply-padding">
+          <span class="title-IWWQ"><span><span>学校名称</span></span></span>
+          <span class="ctrl sd-Select-container-1Eq4x"><input type="text" class="sd-select-input searchable" data-src="uni" placeholder="请输入学校名称" /></span>
+        </div>
+        <div class="apply-field-7 select_searchable apply-padding">
+          <span class="title-IWWQ"><span><span>专业名称</span></span></span>
+          <span class="ctrl sd-Select-container-1Eq4x"><input type="text" class="sd-select-input searchable" data-src="major" placeholder="请输入专业名称" /></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 获奖经历：年/月下拉 + 奖项名称下拉 -->
   <div class="module">
     <div class="module-header">
       <span class="module-title">获奖经历</span>
       <button type="button" class="sd-btn" id="award-add"><span class="icon-add">＋</span><span><span>添加</span></span></button>
     </div>
-    <div class="apply-fields-Q2iJ multi-NTCD">
-      <div class="apply-field-1 date_info-UOJ apply-padding">
-        <span class="title-IWWQ"><span><span>获奖时间</span></span></span>
-        <span class="ctrl sel-container"><input type="text" placeholder="年" /><input type="text" placeholder="月" /></span>
-      </div>
-      <div class="apply-field-2 string_info-UOJ apply-padding">
-        <span class="title-IWWQ"><span><span>奖项名称</span></span></span>
-        <span class="ctrl"><input type="text" class="sd-select-input" placeholder="奖项名称" readonly /></span>
+    <div class="apply-fields-Q2iJ multi-NTCD" id="award-container">
+      <div class="entry">
+        <div class="apply-field-1 date_info-UOJ apply-padding">
+          <span class="title-IWWQ"><span><span>获奖时间</span></span></span>
+          <span class="ctrl sel-row">
+            <span class="ctrl sd-Select-container-1Eq4x"><input type="text" class="sd-select-input searchable" data-src="year" placeholder="年" /></span>
+            <span class="ctrl sd-Select-container-1Eq4x"><input type="text" class="sd-select-input searchable" data-src="month" placeholder="月" /></span>
+          </span>
+        </div>
+        <div class="apply-field-2 string_info-UOJ apply-padding">
+          <span class="title-IWWQ"><span><span>奖项名称</span></span></span>
+          <span class="ctrl sd-Select-container-1Eq4x"><input type="text" class="sd-select-input searchable" data-src="award" placeholder="奖项名称" /></span>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- 项目经验：multi 模块 -->
+  <!-- 项目经验 -->
   <div class="module">
     <div class="module-header">
       <span class="module-title">项目经验</span>
       <button type="button" class="sd-btn" id="proj-add"><span><span>添加</span></span></button>
     </div>
-    <div class="apply-fields-AAAA multi-BBBB">
-      <div class="apply-field-3 string_info-CIC apply-padding">
-        <span class="title-IWWQ"><span><span>项目名称</span></span></span>
-        <span class="ctrl"><input type="text" placeholder="项目名称" /></span>
+    <div class="apply-fields-AAAA multi-BBBB" id="proj-container">
+      <div class="entry">
+        <div class="apply-field-3 string_info-CIC apply-padding">
+          <span class="title-IWWQ"><span><span>项目名称</span></span></span>
+          <span class="ctrl"><input type="text" placeholder="项目名称" /></span>
+        </div>
+        <div class="apply-field-4 string_info-CIC apply-padding">
+          <span class="title-IWWQ"><span><span>项目中职责</span></span></span>
+          <span class="ctrl"><input type="text" placeholder="项目中职责" /></span>
+        </div>
+        <div class="apply-field-5 text_info-CIC apply-padding">
+          <span class="title-IWWQ"><span><span>项目描述</span></span></span>
+          <span class="ctrl"><textarea placeholder="项目描述"></textarea></span>
+        </div>
       </div>
-      <div class="apply-field-4 string_info-CIC apply-padding">
-        <span class="title-IWWQ"><span><span>项目中职责</span></span></span>
-        <span class="ctrl"><input type="text" placeholder="项目中职责" /></span>
-      </div>
-      <div class="apply-field-5 text_info-CIC apply-padding">
-        <span class="title-IWWQ"><span><span>项目描述</span></span></span>
-        <span class="ctrl"><textarea placeholder="项目描述"></textarea></span>
+    </div>
+  </div>
+
+  <!-- 竞赛经历 -->
+  <div class="module">
+    <div class="module-header">
+      <span class="module-title">竞赛经历</span>
+      <button type="button" class="sd-btn" id="comp-add"><span><span>添加</span></span></button>
+    </div>
+    <div class="apply-fields-COMP multi-DDDD" id="comp-container">
+      <div class="entry">
+        <div class="apply-field-8 string_info-CIC apply-padding">
+          <span class="title-IWWQ"><span><span>竞赛奖项</span></span></span>
+          <span class="ctrl"><input type="text" placeholder="竞赛奖项" /></span>
+        </div>
+        <div class="apply-field-9 select_searchable apply-padding">
+          <span class="title-IWWQ"><span><span>竞赛级别</span></span></span>
+          <span class="ctrl sd-Select-container-1Eq4x"><input type="text" class="sd-select-input searchable" data-src="level" placeholder="竞赛级别" /></span>
+        </div>
+        <div class="apply-field-10 select_searchable apply-padding">
+          <span class="title-IWWQ"><span><span>奖励级别</span></span></span>
+          <span class="ctrl sd-Select-container-1Eq4x"><input type="text" class="sd-select-input searchable" data-src="prize" placeholder="奖励级别" /></span>
+        </div>
+        <div class="apply-field-11 string_info-CIC apply-padding">
+          <span class="title-IWWQ"><span><span>时间</span></span></span>
+          <span class="ctrl"><input type="text" placeholder="如 2025-04" /></span>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<template id="award-tpl">
-  <div class="apply-field-1 date_info-UOJ apply-padding">
-    <span class="title-IWWQ"><span><span>获奖时间</span></span></span>
-    <span class="ctrl sel-container"><input type="text" placeholder="年" /><input type="text" placeholder="月" /></span>
+<template id="edu-tpl">
+  <div class="entry">
+    <div class="apply-field-6 select_searchable apply-padding">
+      <span class="title-IWWQ"><span><span>学校名称</span></span></span>
+      <span class="ctrl sd-Select-container-1Eq4x"><input type="text" class="sd-select-input searchable" data-src="uni" placeholder="请输入学校名称" /></span>
+    </div>
+    <div class="apply-field-7 select_searchable apply-padding">
+      <span class="title-IWWQ"><span><span>专业名称</span></span></span>
+      <span class="ctrl sd-Select-container-1Eq4x"><input type="text" class="sd-select-input searchable" data-src="major" placeholder="请输入专业名称" /></span>
+    </div>
   </div>
-  <div class="apply-field-2 string_info-UOJ apply-padding">
-    <span class="title-IWWQ"><span><span>奖项名称</span></span></span>
-    <span class="ctrl"><input type="text" class="sd-select-input" placeholder="奖项名称" readonly /></span>
+</template>
+
+<template id="award-tpl">
+  <div class="entry">
+    <div class="apply-field-1 date_info-UOJ apply-padding">
+      <span class="title-IWWQ"><span><span>获奖时间</span></span></span>
+      <span class="ctrl sel-row">
+        <span class="ctrl sd-Select-container-1Eq4x"><input type="text" class="sd-select-input searchable" data-src="year" placeholder="年" /></span>
+        <span class="ctrl sd-Select-container-1Eq4x"><input type="text" class="sd-select-input searchable" data-src="month" placeholder="月" /></span>
+      </span>
+    </div>
+    <div class="apply-field-2 string_info-UOJ apply-padding">
+      <span class="title-IWWQ"><span><span>奖项名称</span></span></span>
+      <span class="ctrl sd-Select-container-1Eq4x"><input type="text" class="sd-select-input searchable" data-src="award" placeholder="奖项名称" /></span>
+    </div>
   </div>
 </template>
 
 <template id="proj-tpl">
-  <div class="apply-field-3 string_info-CIC apply-padding">
-    <span class="title-IWWQ"><span><span>项目名称</span></span></span>
-    <span class="ctrl"><input type="text" placeholder="项目名称" /></span>
+  <div class="entry">
+    <div class="apply-field-3 string_info-CIC apply-padding">
+      <span class="title-IWWQ"><span><span>项目名称</span></span></span>
+      <span class="ctrl"><input type="text" placeholder="项目名称" /></span>
+    </div>
+    <div class="apply-field-4 string_info-CIC apply-padding">
+      <span class="title-IWWQ"><span><span>项目中职责</span></span></span>
+      <span class="ctrl"><input type="text" placeholder="项目中职责" /></span>
+    </div>
+    <div class="apply-field-5 text_info-CIC apply-padding">
+      <span class="title-IWWQ"><span><span>项目描述</span></span></span>
+      <span class="ctrl"><textarea placeholder="项目描述"></textarea></span>
+    </div>
   </div>
-  <div class="apply-field-4 string_info-CIC apply-padding">
-    <span class="title-IWWQ"><span><span>项目中职责</span></span></span>
-    <span class="ctrl"><input type="text" placeholder="项目中职责" /></span>
-  </div>
-  <div class="apply-field-5 text_info-CIC apply-padding">
-    <span class="title-IWWQ"><span><span>项目描述</span></span></span>
-    <span class="ctrl"><textarea placeholder="项目描述"></textarea></span>
+</template>
+
+<template id="comp-tpl">
+  <div class="entry">
+    <div class="apply-field-8 string_info-CIC apply-padding">
+      <span class="title-IWWQ"><span><span>竞赛奖项</span></span></span>
+      <span class="ctrl"><input type="text" placeholder="竞赛奖项" /></span>
+    </div>
+    <div class="apply-field-9 select_searchable apply-padding">
+      <span class="title-IWWQ"><span><span>竞赛级别</span></span></span>
+      <span class="ctrl sd-Select-container-1Eq4x"><input type="text" class="sd-select-input searchable" data-src="level" placeholder="竞赛级别" /></span>
+    </div>
+    <div class="apply-field-10 select_searchable apply-padding">
+      <span class="title-IWWQ"><span><span>奖励级别</span></span></span>
+      <span class="ctrl sd-Select-container-1Eq4x"><input type="text" class="sd-select-input searchable" data-src="prize" placeholder="奖励级别" /></span>
+    </div>
+    <div class="apply-field-11 string_info-CIC apply-padding">
+      <span class="title-IWWQ"><span><span>时间</span></span></span>
+      <span class="ctrl"><input type="text" placeholder="如 2025-04" /></span>
+    </div>
   </div>
 </template>
 
 <script>
-  // 添加按钮：克隆模板追加（结构含各自的下拉触发器）
-  document.getElementById("award-add").addEventListener("click", () => {
-    const box = document.querySelector(".apply-fields-Q2iJ");
-    const frag = document.getElementById("award-tpl").content;
-    [...frag.children].forEach((n) => box.appendChild(n.cloneNode(true)));
-  });
-  document.getElementById("proj-add").addEventListener("click", () => {
-    const box = document.querySelector(".apply-fields-AAAA");
-    const frag = document.getElementById("proj-tpl").content;
-    [...frag.children].forEach((n) => box.appendChild(n.cloneNode(true)));
-  });
+  const SOURCES = {
+    uni: ["北京大学", "清华大学", "浙江大学", "复旦大学", "上海交通大学", "南京大学", "哈尔滨工业大学", "哈尔滨理工大学", "武汉大学", "华中科技大学", "四川大学", "西安交通大学", "中山大学", "东南大学", "同济大学"],
+    major: ["计算机科学与技术", "软件工程", "电子信息工程", "统计学", "应用数学", "通信工程", "自动化", "信息安全"],
+    year: ["2020", "2021", "2022", "2023", "2024", "2025", "2026", "2027"],
+    month: ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"],
+    award: ["国家奖学金", "国家励志奖学金", "校一等奖学金", "校二等奖学金", "优秀学生干部", "三好学生"],
+    level: ["国际", "国家级", "省市地区级", "市级", "校级"],
+    prize: ["特等奖", "一等奖", "二等奖", "三等奖", "金奖", "银奖", "铜奖", "优胜奖", "优秀奖"],
+  };
 
-  // 模拟 Moka sd-Select 的刁钻行为：
-  // - mousedown 展开面板，click 会把已展开的面板收起（完整点击 = 开了又关）
-  // - 选项是 body 挂载的 div 门户，不在输入框旁边
+  // 添加 = 模拟 React 整体重渲染：容器节点整体替换，旧引用全部作废
+  function rerender(containerId, tplId, entrySel) {
+    const old = document.getElementById(containerId);
+    const n = Math.min(6, old.querySelectorAll(entrySel).length + 1);
+    const fresh = document.createElement("div");
+    fresh.id = containerId;
+    fresh.className = old.className;
+    for (let i = 0; i < n; i++) {
+      [...document.getElementById(tplId).content.children].forEach((c) => fresh.appendChild(c.cloneNode(true)));
+    }
+    old.replaceWith(fresh); // 重渲染后旧容器/旧按钮/旧字段引用全部断链
+  }
+  document.getElementById("edu-add").addEventListener("click", () => rerender("edu-container", "edu-tpl", ".entry"));
+  document.getElementById("award-add").addEventListener("click", () => rerender("award-container", "award-tpl", ".entry"));
+  document.getElementById("proj-add").addEventListener("click", () => rerender("proj-container", "proj-tpl", ".entry"));
+  document.getElementById("comp-add").addEventListener("click", () => rerender("comp-container", "comp-tpl", ".entry"));
+
+  // 可搜索下拉：mousedown 展开全量列表；打字实时过滤；click 选中/收起
   let portal = null;
   let portalFor = null;
   function closePortal() { if (portal) { portal.remove(); portal = null; } }
-  document.addEventListener("mousedown", (e) => {
-    const trigger = e.target.closest && e.target.closest(".sd-select-input");
-    if (!trigger) return;
+  function openPortal(input, filter) {
     closePortal();
-    portalFor = trigger;
-    const rect = trigger.getBoundingClientRect();
+    portalFor = input;
+    const src = SOURCES[input.dataset.src] || [];
+    const list = filter ? src.filter((x) => x.includes(filter)) : src;
+    const rect = input.getBoundingClientRect();
     portal = document.createElement("div");
     portal.className = "sd-portal";
     portal.style.left = rect.left + "px";
     portal.style.top = rect.bottom + 4 + "px";
     portal.style.minWidth = rect.width + "px";
-    ["国家奖学金", "校一等奖学金", "省三等奖"].forEach((t) => {
+    list.forEach((t) => {
       const d = document.createElement("div");
       d.className = "sd-portal-item";
       d.textContent = t;
       portal.appendChild(d);
     });
+    if (!list.length) {
+      const d = document.createElement("div");
+      d.className = "sd-portal-item";
+      d.textContent = "无匹配项";
+      portal.appendChild(d);
+    }
     document.body.appendChild(portal);
-    e.preventDefault();
+  }
+  document.addEventListener("mousedown", (e) => {
+    const t = e.target.closest && e.target.closest(".sd-select-input");
+    if (t) { e.preventDefault(); openPortal(t, ""); }
+  });
+  document.addEventListener("input", (e) => {
+    if (e.target.matches && e.target.matches(".searchable")) openPortal(e.target, e.target.value);
   });
   document.addEventListener("click", (e) => {
     const item = e.target.closest && e.target.closest(".sd-portal-item");
@@ -149,8 +272,8 @@
       closePortal();
       return;
     }
-    const trigger = e.target.closest && e.target.closest(".sd-select-input");
-    if (trigger) closePortal(); // click 收起（toggle）
+    const t = e.target.closest && e.target.closest(".sd-select-input");
+    if (!t) closePortal();
   });
 </script>
 </body>

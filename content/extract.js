@@ -155,13 +155,16 @@ function fwMokaIsDropdown(fd) {
 function fwDetectMoka(repeaters, mokaContainers) {
   const containers = [...document.querySelectorAll('div[class*="apply-fields"]')]
     .filter((c) => /multi/.test(c.className) && fwVisible(c) && c.querySelector('[class*="apply-field"]'));
-  containers.forEach((container) => {
+  containers.forEach((container, orderIdx) => {
     try {
-      const fieldDivs = () => [...container.querySelectorAll('div[class*="apply-field"]')];
-      // 一条记录的字段序列：按文档序走到第一个重复标题为止
+      const titleOf = (fd) => {
+        const t = fd.querySelector('[class*="title"]');
+        return t ? (t.innerText || "").replace(/\s+/g, " ").trim() : "";
+      };
+      // 一条记录的字段序列：按文档序走到第一个重复标题为止（快照阶段取一次）
       const defs = [];
       const seen = new Set();
-      for (const fd of fieldDivs()) {
+      for (const fd of [...container.querySelectorAll('div[class*="apply-field"]')]) {
         const title = fwMokaTitleOf(fd);
         if (!title || seen.has(title)) break;
         seen.add(title);
@@ -169,7 +172,7 @@ function fwDetectMoka(repeaters, mokaContainers) {
         const isDD = fwMokaIsDropdown(fd);
         inputs.forEach((inp, sub) => {
           defs.push({
-            mokaTitle: title, sub, el: inp,
+            mokaTitle: title, sub,
             style: isDD ? "dropdown" : fwKindOf(inp),
             splitDate: inputs.length > 1, // 年/月拆分的日期
             label: title + (inputs.length > 1 ? (sub === 0 ? "（年）" : "（月）") : ""),
@@ -178,30 +181,61 @@ function fwDetectMoka(repeaters, mokaContainers) {
       }
       if (!defs.length) return;
       const firstTitle = defs[0].mokaTitle;
-      const entryCount = () => fieldDivs().filter((fd) => fwMokaTitleOf(fd) === firstTitle).length;
-      // 添加按钮：模块容器父级范围内、容器外的「添加」按钮
-      let addBtn = null;
-      let root = container.parentElement;
-      for (let up = 0; up < 3 && root && !addBtn; up++) {
-        root.querySelectorAll("button, a, span, [role=button]").forEach((b) => {
-          if (addBtn || container.contains(b) || !fwVisible(b)) return;
-          const txt = (b.innerText || b.title || "").replace(/\s+/g, " ").trim();
-          if (txt && txt.length <= 8 && /^(添加|新增|增加)/.test(txt)) addBtn = b;
-        });
-        root = root.parentElement;
-      }
+      const defTitles = defs.map((d) => d.mokaTitle);
+      // 防过期：React 重渲染会整体替换模块节点，提取时抓的引用会全部失效。
+      // 所有查找都在调用时从当前文档重新解析：
+      // 容器按「字段标题集合」匹配，匹配不到再按提取时的序号兜底
+      const findContainer = () => {
+        const cs = [...document.querySelectorAll('div[class*="apply-fields"]')]
+          .filter((c) => /multi/.test(c.className) && fwVisible(c));
+        for (const c of cs) {
+          const titles = new Set(
+            [...c.querySelectorAll('[class*="title"]')].map((t) => (t.innerText || "").replace(/\s+/g, " ").trim())
+          );
+          if (defTitles.length && defTitles.every((t) => titles.has(t))) return c;
+        }
+        return cs[orderIdx] || null;
+      };
+      const findAddBtn = (c) => {
+        let root = c ? c.parentElement : null;
+        for (let up = 0; up < 3 && root; up++) {
+          let found = null;
+          root.querySelectorAll("button, a, span, [role=button]").forEach((b) => {
+            if (found || (c && c.contains(b)) || !fwVisible(b)) return;
+            const txt = (b.innerText || b.title || "").replace(/\s+/g, " ").trim();
+            if (txt && txt.length <= 8 && /^(添加|新增|增加)/.test(txt)) found = b;
+          });
+          if (found) return found;
+          root = root.parentElement;
+        }
+        return null;
+      };
+      const entryCount = () => {
+        const c = findContainer();
+        if (!c) return 0;
+        return [...c.querySelectorAll('div[class*="apply-field"]')]
+          .filter((fd) => fwMokaTitleOf(fd) === firstTitle).length;
+      };
       const rep = {
         key: "m" + repeaters.length,
-        sig: "moka|" + defs.map((d) => d.mokaTitle).join("/"),
-        addBtn: addBtn,
-        addText: addBtn ? ((addBtn.innerText || addBtn.title || "添加") + "").replace(/\s+/g, " ").trim() : "",
+        sig: "moka|" + defTitles.join("/"),
+        addBtn: findAddBtn(container),
+        addText: "",
         theme: null,
         count: entryCount(),
+        // ensure_count 每次尝试前重新找按钮（重渲染后旧按钮会作废）
+        getAddBtn: function () {
+          const c = findContainer();
+          return c ? findAddBtn(c) : null;
+        },
         getItems: function () {
           return Array.from({ length: entryCount() }, (_, i) => ({ __mokaEntry: i }));
         },
         locateField: function (itemIdx, field) {
-          const divs = fieldDivs().filter((fd) => fwMokaTitleOf(fd) === field.mokaTitle);
+          const c = findContainer();
+          if (!c) return null;
+          const divs = [...c.querySelectorAll('div[class*="apply-field"]')]
+            .filter((fd) => fwMokaTitleOf(fd) === field.mokaTitle);
           const fd = divs[itemIdx];
           if (!fd) return null;
           const inputs = fwMokaInputs(fd);
@@ -209,12 +243,14 @@ function fwDetectMoka(repeaters, mokaContainers) {
         },
         fields: [],
       };
+      const addBtnEl = rep.getAddBtn();
+      rep.addText = addBtnEl ? ((addBtnEl.innerText || addBtnEl.title || "添加") + "").replace(/\s+/g, " ").trim() : "";
       defs.forEach((d, i) => {
         rep.fields.push({
-          key: "mf" + i, el: d.el, relPath: null,
-          style: d.style, tag: d.style === "dropdown" ? "div" : d.el.tagName.toLowerCase(),
-          id: d.el.id || "", name: d.el.getAttribute("name") || "",
-          label: d.label, placeholder: d.el.getAttribute("placeholder") || "",
+          key: "mf" + i, el: null, relPath: null,
+          style: d.style, tag: d.style === "dropdown" ? "div" : "input",
+          id: "", name: "",
+          label: d.label, placeholder: "",
           required: false, options: null,
           mokaTitle: d.mokaTitle, sub: d.sub, splitDate: d.splitDate,
           sig: d.label + "|" + d.mokaTitle + "|" + d.style,

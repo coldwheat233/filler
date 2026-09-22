@@ -96,13 +96,20 @@ async function fwPollFreshOptions(before, rounds) {
 }
 
 async function fwFillDropdown(triggerEl, value, log) {
+  const before = fwAllVisibleSet();
+  // 可搜索下拉（如 Moka 的学校/专业选择）：先把值打进输入框触发过滤，
+  // 否则全量列表（或远程懒加载列表）里可能根本没有目标项。非搜索下拉无害，
+  // 最终以点选的选项为准。
+  if (triggerEl.tagName === "INPUT" && !triggerEl.readOnly) {
+    try { fwSetNativeValue(triggerEl, String(value)); } catch (e) {}
+    await fwSleep(300);
+  }
   // 展开策略轮试：
   // 1) 完整点击（冒泡）——React/Vue 根委托能收到
   // 2) 只按下去（pointerdown+mousedown）——「mousedown 展开、click 收起」的
   //    toggle 型下拉（Moka sd-Select）用完整点击会开了又关，只按下去保持展开
   // 3) 完整点击（不冒泡）——防「点击空白处关闭」全局监听的站点
   // 4) 再来一轮完整冒泡点击（个别站点点两次才开）
-  const before = fwAllVisibleSet();
   const rect = triggerEl.getBoundingClientRect();
   const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
   const pressOnly = () => {
@@ -118,10 +125,14 @@ async function fwFillDropdown(triggerEl, value, log) {
     () => fwClickLikeUser(triggerEl, { bubble: true }),
   ];
   let opts = [];
-  for (const mode of modes) {
-    mode();
-    opts = await fwPollFreshOptions(before, 5);
-    if (opts.length) break;
+  // 打字可能已经带出过滤后的选项
+  opts = await fwPollFreshOptions(before, 4);
+  if (!opts.length) {
+    for (const mode of modes) {
+      mode();
+      opts = await fwPollFreshOptions(before, 5);
+      if (opts.length) break;
+    }
   }
   if (!opts.length) return { ok: false, msg: "展开下拉失败：未出现新选项面板" };
 
