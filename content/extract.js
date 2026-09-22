@@ -131,20 +131,37 @@ function fwRadioOptionLabel(r) {
 // ---------- 重复段落识别：同 tag+class 的兄弟块，块内 >=2 个控件 ----------
 // 「添加」按钮是全局配对的：多个段落时按 DOM 顺序与段落一一对应，避免把
 // 「添加获奖记录」误配给实习段落（旧版按文案最短挑选会配错）。
-const FW_ADD_PAT = /(添加|新增|增加|追加|append|add)/i;
+const FW_ADD_PAT = /(添加|新增|增加|追加|录入|append|add)/i;
+const FW_PLUS_ONLY = /^[+＋]\s*$/; // 纯「＋」图标按钮
+const FW_ADD_CLASS = /(add|plus|append|create|increase|insert)/i;
 
-function fwCollectAddCandidates(excludeEls, CONTROL) {
+function fwCollectAddCandidates(itemEls, CONTROL) {
   const out = [];
-  document.querySelectorAll("button, a, span, div, i, em, input[type=button], input[type=submit]").forEach((b) => {
+  document.querySelectorAll(
+    "button, a, span, div, i, em, p, [role=button], input[type=button], input[type=submit]"
+  ).forEach((b) => {
     if (!fwVisible(b)) return;
-    if (excludeEls.some((x) => x.contains(b))) return;
     if (b.querySelector(CONTROL)) return; // 不是纯按钮
     const txt = (b.innerText || b.value || b.title || b.getAttribute("aria-label") || "").replace(/\s+/g, " ").trim();
     if (!txt || txt.length > 14) return;
-    if (!FW_ADD_PAT.test(txt)) return;
+    const meta = (b.getAttribute("class") || "") + " " + (b.title || "") + " " + (b.getAttribute("aria-label") || "");
+    const plusOnly = FW_PLUS_ONLY.test(txt);
+    if (plusOnly) {
+      // 纯「＋」必须带 add-ish 类名/标注，避免把折叠开关、数量步进器当成添加
+      if (!FW_ADD_CLASS.test(meta)) return;
+    } else if (!FW_ADD_PAT.test(txt)) {
+      return;
+    }
+    // 条目内部的按钮需要更强信号（条目里常有「添加附件」这类干扰）；
+    // 但最后一个条目里的添加按钮是常见布局，文案明确时放行
+    const inItem = itemEls.some((x) => x.contains(b));
+    if (inItem) {
+      const strongText = /添加\s*(一条|新)?\s*(教育|工作|实习|项目|获奖|竞赛|语言|研究|游戏|成员|经历|记录|能力|活动|实践|成果)/.test(txt);
+      if (!FW_ADD_CLASS.test(meta) && !strongText) return;
+    }
     const innerChild = Array.from(b.children).some((c) => {
       const t = (c.innerText || c.title || "").replace(/\s+/g, " ").trim();
-      return t && t.length <= 14 && FW_ADD_PAT.test(t);
+      return t && t.length <= 14 && (FW_ADD_PAT.test(t) || FW_PLUS_ONLY.test(t));
     });
     if (innerChild) return; // 只收叶子级按钮
     out.push({ el: b, txt });
@@ -221,9 +238,11 @@ function extractForm() {
       if (!nested) kept.push(g);
     });
 
-    // 「添加」按钮全局配对：候选按钮与段落都按 DOM 顺序排，一一对应
-    const excludeEls = kept.flatMap((g) => g.items);
-    const cands = fwCollectAddCandidates(excludeEls, CONTROL);
+    // 「添加」按钮全局配对：候选按钮与段落都按 DOM 顺序排，一一对应。
+    // 注意按钮可能在最后一个条目内部（常见布局），所以条目只用于区分
+    // 「条目内部的按钮需要更强信号」，而不是一刀切排除
+    const itemEls = kept.flatMap((g) => g.items);
+    const cands = fwCollectAddCandidates(itemEls, CONTROL);
     kept.sort((a, b) => fwDomOrder(a.el, b.el));
     cands.sort((x, y) => fwDomOrder(x.el, y.el));
     const btnFor = new Map();

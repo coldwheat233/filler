@@ -35,16 +35,17 @@ function fwSetNativeValue(el, value) {
 }
 
 function fwClickLikeUser(el, opts) {
-  // 先补 mousedown/mouseup：antd 的下拉靠 mousedown 展开。
+  // 完整按键序列：pointerdown/up（部分框架用 Pointer 事件）→ mousedown/up → click。
   // opts.bubble=false 用于下拉触发器：事件不冒泡，避免页面「点击空白处关闭面板」
   // 的全局监听把我们刚展开的面板立刻关掉（触发器自身的监听仍会触发）。
   const bubble = !(opts && opts.bubble === false);
   const rect = el.getBoundingClientRect();
-  const mouseOpts = {
-    bubbles: bubble, cancelable: true, view: window,
-    clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2,
-  };
+  const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+  const mouseOpts = { bubbles: bubble, cancelable: true, view: window, clientX: cx, clientY: cy };
+  const pointerOpts = Object.assign({ pointerId: 1, pointerType: "mouse", isPrimary: true }, mouseOpts);
+  try { el.dispatchEvent(new PointerEvent("pointerdown", pointerOpts)); } catch (e) {}
   el.dispatchEvent(new MouseEvent("mousedown", mouseOpts));
+  try { el.dispatchEvent(new PointerEvent("pointerup", pointerOpts)); } catch (e) {}
   el.dispatchEvent(new MouseEvent("mouseup", mouseOpts));
   if (bubble) el.click();
   else el.dispatchEvent(new MouseEvent("click", mouseOpts));

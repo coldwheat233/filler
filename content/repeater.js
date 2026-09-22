@@ -21,7 +21,10 @@ async function fwEnsureCount(rep, n) {
       if (rep.getItems().length > before) { grew = true; break; }
     }
     if (!grew) {
-      throw new Error("点击「" + (rep.addText || "添加") + "」后块数未增加（可能已达上限 " + before + " 条，或按钮无效）");
+      throw new Error(
+        "点击「" + (rep.addText || "添加") + "」后块数未增加：可能已达上限 " + before +
+        " 条，或该按钮不是添加按钮。可手动点一次「添加」后重新生成计划"
+      );
     }
     added++;
     await fwSleep(200);

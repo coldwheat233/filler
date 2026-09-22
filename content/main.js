@@ -184,7 +184,10 @@ async function fwBuildSteps(form, profile) {
       label: rep.addText || theme,
       value: String(needAdd), targetCount: rep.count + needAdd,
       note: `${theme}：简历 ${items.length} 条 / 页面 ${rep.count} 块（${styleDesc}）` +
-        (needAdd ? ` → 将点击「${rep.addText || "添加"}」${needAdd} 次` : "，块数足够，无需添加") +
+        (needAdd
+          ? ` → 将点击「${rep.addText || "添加"}」${needAdd} 次` +
+            (rep.addBtn ? "" : "；⚠ 未识别到添加按钮，该步骤会失败，请手动点添加后重新生成计划")
+          : "，块数足够，无需添加") +
         (unmatched.length ? `；未识别子字段: ${unmatched.join("、")}` : ""),
     });
     for (let i = 0; i < items.length; i++) {
