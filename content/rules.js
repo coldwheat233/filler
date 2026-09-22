@@ -310,8 +310,17 @@ function fwLLMChatJSON(system, user) {
   return new Promise((resolve) => {
     try {
       chrome.runtime.sendMessage({ type: "FW_LLM_CHAT", payload: { system, user } }, (resp) => {
-        if (chrome.runtime.lastError) return resolve(null);
-        if (!resp || resp.error || !resp.content) return resolve(null);
+        if (chrome.runtime.lastError) {
+          console.warn("[网申填报助手] LLM 通道错误:", chrome.runtime.lastError.message);
+          return resolve(null);
+        }
+        if (!resp || resp.error || !resp.content) {
+          const err = (resp && resp.error) || "LLM 空响应";
+          // 失败不能静默：控制台留痕 + 收集起来展示到计划面板
+          console.warn("[网申填报助手] LLM 调用失败:", err);
+          (window.__fwLLMErrors = window.__fwLLMErrors || []).push(String(err));
+          return resolve(null);
+        }
         resolve(fwParseJSONLoose(resp.content));
       });
     } catch (e) {

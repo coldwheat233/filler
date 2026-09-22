@@ -395,15 +395,31 @@ async function init() {
     }
   });
   $("btn-plan").addEventListener("click", startPlan);
-  $("btn-save-llm").addEventListener("click", async () => {
-    const cfg2 = {
-      baseUrl: $("llm-base").value.trim() || DEFAULT_LLM.baseUrl,
-      model: $("llm-model").value.trim() || DEFAULT_LLM.model,
-      apiKey: $("llm-key").value.trim(),
-    };
-    await chrome.storage.local.set({ llm: cfg2 });
-    refreshLLMState();
-    msg("llm-msg", cfg2.apiKey ? "√ 已保存，语义匹配已启用" : "已保存（当前为离线规则模式）", "ok");
+  $("btn-save-llm").addEventListener("click", saveLLM);
+  $("btn-test-llm").addEventListener("click", async () => {
+    // 先把当前输入保存下去再测，避免测的是旧配置
+    await saveLLM(true);
+    const el = $("llm-test-msg");
+    el.textContent = "测试中…";
+    el.className = "msg";
+    const t0 = Date.now();
+    chrome.runtime.sendMessage(
+      { type: "FW_LLM_CHAT", payload: { system: '这是连通性测试。只输出 JSON：{"ok": true}', user: "ping" } },
+      (resp) => {
+        if (chrome.runtime.lastError) {
+          el.textContent = "✗ " + chrome.runtime.lastError.message;
+          el.className = "msg err";
+          return;
+        }
+        if (!resp || resp.error) {
+          el.textContent = "✗ " + ((resp && resp.error) || "空响应");
+          el.className = "msg err";
+          return;
+        }
+        el.textContent = "√ 连通正常（" + (Date.now() - t0) + "ms）返回: " + String(resp.content).slice(0, 50);
+        el.className = "msg ok";
+      }
+    );
   });
   $("btn-json-sync").addEventListener("click", () => {
     $("json").value = JSON.stringify(profile, null, 2);
@@ -429,6 +445,19 @@ async function refreshLLMState() {
   const el = $("llm-state");
   el.textContent = on ? "LLM 已启用" : "离线规则模式";
   el.className = "state" + (on ? "" : " off");
+}
+
+async function saveLLM(silent) {
+  const cfg2 = {
+    baseUrl: $("llm-base").value.trim() || DEFAULT_LLM.baseUrl,
+    model: $("llm-model").value.trim() || DEFAULT_LLM.model,
+    apiKey: $("llm-key").value.trim(),
+  };
+  await chrome.storage.local.set({ llm: cfg2 });
+  refreshLLMState();
+  if (!silent) {
+    msg("llm-msg", cfg2.apiKey ? "√ 已保存，语义匹配已启用" : "已保存（当前为离线规则模式）", "ok");
+  }
 }
 
 async function startPlan() {

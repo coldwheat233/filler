@@ -46,6 +46,15 @@ async function fwStart() {
 async function fwRun(profile, form) {
   await fwMatchForm(form, profile);
   const steps = await fwBuildSteps(form, profile);
+  // LLM 配置了但调用失败时，明确告诉用户而不是悄悄退化成离线模式
+  const llmErrs = window.__fwLLMErrors || [];
+  if (llmErrs.length) {
+    steps.push({
+      kind: "info", style: "section",
+      label: `⚠ LLM 调用失败 ${llmErrs.length} 次（相关字段退回规则/人工）`,
+      note: String(llmErrs[0]).slice(0, 140) + "｜请到弹窗 LLM 页用「测试连接」排查",
+    });
+  }
   FWPanel.show(steps, { onConfirm: (selected) => fwExecute(selected) });
 }
 
@@ -71,12 +80,12 @@ async function fwMatchForm(form, profile) {
     pending.push(f);
   }
   if (pending.length && (await fwHasLLM())) {
-    await fwLLMMatchFields(pending, profile);
+    await fwLLMMatchFields(pending, profile, fp);
   }
   await fwSaveCache(cache);
 }
 
-async function fwLLMMatchFields(pending, profile) {
+async function fwLLMMatchFields(pending, profile, fp) {
   const listing = pending
     .map((f) => {
       let line = `- key=${f.key} label=「${f.label || ""}」形态=${f.style}`;
@@ -103,7 +112,7 @@ async function fwLLMMatchFields(pending, profile) {
   // 匹配成功的写缓存
   const cache = await fwLoadCache();
   pending.forEach((f) => {
-    if (f.path) fwCacheSet(cache, form.fingerprint, f.sig, { path: f.path, label: f.label });
+    if (f.path) fwCacheSet(cache, fp, f.sig, { path: f.path, label: f.label });
   });
   await fwSaveCache(cache);
 }

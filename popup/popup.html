@@ -43,7 +43,12 @@
       <label>接口地址（OpenAI 兼容）<input id="llm-base" placeholder="https://api.deepseek.com/v1" /></label>
       <label>模型<input id="llm-model" placeholder="deepseek-chat" /></label>
       <label>API Key<input id="llm-key" type="password" placeholder="仅存本地" /></label>
-      <div class="row"><button id="btn-save-llm" class="primary">保存 LLM 设置</button><span id="llm-msg" class="msg"></span></div>
+      <div class="row">
+        <button id="btn-save-llm" class="primary">保存 LLM 设置</button>
+        <button id="btn-test-llm">测试连接</button>
+        <span id="llm-msg" class="msg"></span>
+      </div>
+      <div class="row"><span id="llm-test-msg" class="msg"></span></div>
       <p class="hint">不配置也可用：内置规则匹配常见字段，其余在计划中标出人工补填；
         配置后规则外字段走大模型语义匹配。</p>
     </div>
