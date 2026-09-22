@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>添加按钮边缘用例测试</title>
+<style>
+  body { font: 14px/1.6 "Microsoft YaHei", sans-serif; background: #f0f2f5; }
+  .wrap { max-width: 640px; margin: 30px auto; background: #fff; border-radius: 8px; padding: 24px 32px; }
+  .form-item { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; }
+  .field-label { width: 110px; text-align: right; color: #555; flex-shrink: 0; }
+  input, textarea { flex: 1; border: 1px solid #d0d7de; border-radius: 6px; padding: 6px 10px; font-size: 13px; }
+  .rep-block { border: 1px solid #e6e9ef; border-radius: 8px; padding: 12px 16px 4px; margin-bottom: 10px; background: #fbfcfe; }
+  h2 { font-size: 15px; margin: 20px 0 12px; border-left: 3px solid #1a73e8; padding-left: 8px; }
+  .add-plus-outside { display: inline-block; border: 1px dashed #1a73e8; color: #1a73e8; border-radius: 50%;
+    width: 28px; height: 28px; line-height: 26px; text-align: center; cursor: pointer; user-select: none; }
+  .add-inside { display: inline-block; color: #1a73e8; cursor: pointer; user-select: none; padding: 4px 0 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="form-item">
+    <div class="field-label">姓名</div>
+    <input type="text" id="name" />
+  </div>
+
+  <!-- 用例A：纯「＋」图标按钮（在条目外，class 带 add 信号） -->
+  <h2>获奖情况（纯＋图标按钮）</h2>
+  <div id="award2-list">
+    <div class="award2-item rep-block">
+      <div class="form-item">
+        <div class="field-label">奖项名称</div>
+        <input type="text" name="a2_name_0" />
+      </div>
+      <div class="form-item">
+        <div class="field-label">获奖时间</div>
+        <input type="date" name="a2_date_0" />
+      </div>
+    </div>
+  </div>
+  <span class="add-plus-outside" role="button" title="添加获奖记录">＋</span>
+
+  <!-- 用例B：添加按钮在最后一个条目内部（每块都带） -->
+  <h2>实习经历（按钮在条目内部）</h2>
+  <div id="intern2-list">
+    <div class="intern2-item rep-block">
+      <div class="form-item">
+        <div class="field-label">单位名称</div>
+        <input type="text" name="i2_company_0" />
+      </div>
+      <div class="form-item">
+        <div class="field-label">实习内容</div>
+        <textarea name="i2_desc_0"></textarea>
+      </div>
+      <span class="add-inside" role="button">＋ 添加实习经历</span>
+    </div>
+  </div>
+</div>
+
+<template id="award2-tpl">
+  <div class="award2-item rep-block">
+    <div class="form-item">
+      <div class="field-label">奖项名称</div>
+      <input type="text" name="a2_name_{i}" />
+    </div>
+    <div class="form-item">
+      <div class="field-label">获奖时间</div>
+      <input type="date" name="a2_date_{i}" />
+    </div>
+  </div>
+</template>
+
+<template id="intern2-tpl">
+  <div class="intern2-item rep-block">
+    <div class="form-item">
+      <div class="field-label">单位名称</div>
+      <input type="text" name="i2_company_{i}" />
+    </div>
+    <div class="form-item">
+      <div class="field-label">实习内容</div>
+      <textarea name="i2_desc_{i}"></textarea>
+    </div>
+    <span class="add-inside" role="button">＋ 添加实习经历</span>
+  </div>
+</template>
+
+<script>
+  function addBlock(tplId, listId, max) {
+    const list = document.getElementById(listId);
+    if (list.children.length >= max) return;
+    const idx = list.children.length;
+    const node = document.getElementById(tplId).content.firstElementChild.cloneNode(true);
+    node.querySelectorAll("input,textarea").forEach((el) => {
+      if (el.name) el.name = el.name.replace("{i}", idx);
+      el.value = "";
+    });
+    list.appendChild(node);
+  }
+  document.querySelector(".add-plus-outside").addEventListener("click", () => addBlock("award2-tpl", "award2-list", 5));
+  // 用例B：每个块内的按钮都能添加（事件委托到列表，模拟真实站点克隆后仍可用）
+  document.getElementById("intern2-list").addEventListener("click", (e) => {
+    if (e.target.classList.contains("add-inside")) addBlock("intern2-tpl", "intern2-list", 5);
+  });
+</script>
+</body>
+</html>

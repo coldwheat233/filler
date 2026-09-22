@@ -32,20 +32,23 @@ function fwSigOf(el, label, type) {
   return label + "|" + name + "|" + id + "|" + type;
 }
 
-function fwRelPath(root, el) {
-  // 块内相对选择器：新增块是克隆的，结构一致，用它定位第 i 块里的同名控件
-  const parts = [];
-  let node = el;
-  while (node && node !== root) {
-    let sel = node.tagName.toLowerCase();
-    let sib = node, nth = 1;
-    while ((sib = sib.previousElementSibling)) nth++;
-    sel += ":nth-of-type(" + nth + ")";
-    parts.unshift(sel);
-    node = node.parentElement;
+  function fwRelPath(root, el) {
+    // 块内相对选择器：新增块是克隆的，结构一致，用它定位第 i 块里的同名控件
+    const parts = [];
+    let node = el;
+    while (node && node !== root) {
+      let sel = node.tagName.toLowerCase();
+      let sib = node, nth = 1;
+      // 同 fwCssPath：nth-of-type 按「同标签兄弟」计数
+      while ((sib = sib.previousElementSibling)) {
+        if (sib.tagName === node.tagName) nth++;
+      }
+      sel += ':nth-of-type(' + nth + ')';
+      parts.unshift(sel);
+      node = node.parentElement;
+    }
+    return parts.join(' > ');
   }
-  return parts.join(" > ");
-}
 
 // ---------- label 识别 ----------
 function fwCleanCloneText(grp) {
