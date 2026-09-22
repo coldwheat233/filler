@@ -157,7 +157,7 @@ function fwDetectMoka(repeaters, mokaContainers) {
     .filter((c) => /multi/.test(c.className) && fwVisible(c) && c.querySelector('[class*="apply-field"]'));
   containers.forEach((container) => {
     try {
-      const fieldDivs = () => [...container.children].filter((d) => d.matches('div[class*="apply-field"]'));
+      const fieldDivs = () => [...container.querySelectorAll('div[class*="apply-field"]')];
       // 一条记录的字段序列：按文档序走到第一个重复标题为止
       const defs = [];
       const seen = new Set();

@@ -9,22 +9,28 @@ async function fwEnsureCount(rep, n) {
     throw new Error("需要 " + n + " 块但只有 " + items.length + " 块，且「添加」按钮不可用");
   }
   let added = 0;
+  let failedClicks = 0;
   while (rep.getItems().length < n) {
     const before = rep.getItems().length;
     const btn = rep.addBtn;
     btn.scrollIntoView({ block: "center" });
     fwClickLikeUser(btn);
-    // 轮询等待块数 +1（上限 5 秒）
+    // 轮询等待块数 +1（上限 5 秒）；没涨可能是框架还没响应，重试点击（最多 3 次）
     let grew = false;
     for (let i = 0; i < 33; i++) {
       await fwSleep(150);
       if (rep.getItems().length > before) { grew = true; break; }
     }
     if (!grew) {
-      throw new Error(
-        "点击「" + (rep.addText || "添加") + "」后块数未增加：可能已达上限 " + before +
-        " 条，或该按钮不是添加按钮。可手动点一次「添加」后重新生成计划"
-      );
+      failedClicks++;
+      if (failedClicks >= 3) {
+        throw new Error(
+          "点击「" + (rep.addText || "添加") + "」后块数未增加：可能已达上限 " + before +
+          " 条，或该按钮不是添加按钮。可手动点一次「添加」后重新生成计划"
+        );
+      }
+      await fwSleep(400);
+      continue;
     }
     added++;
     await fwSleep(200);

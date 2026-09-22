@@ -43,9 +43,12 @@
         <span class="title-IWWQ"><span><span>获奖时间</span></span></span>
         <span class="ctrl sel-container"><input type="text" placeholder="年" data-part="y" /><input type="text" placeholder="月" data-part="m" /></span>
       </div>
-      <div class="apply-field-2 string_info-UOJ apply-padding">
+      <div class="apply-field-2 string_info-UOJ apply-padding select-box">
         <span class="title-IWWQ"><span><span>奖项名称</span></span></span>
-        <span class="ctrl"><input type="text" placeholder="奖项名称" /></span>
+        <span class="ctrl" style="position:relative">
+          <input type="text" class="sd-select-input" placeholder="奖项名称" readonly />
+          <ul class="sd-options" style="display:none"><li>国家奖学金</li><li>校一等奖学金</li><li>省三等奖</li></ul>
+        </span>
       </div>
     </div>
   </div>
@@ -78,9 +81,12 @@
     <span class="title-IWWQ"><span><span>获奖时间</span></span></span>
     <span class="ctrl sel-container"><input type="text" placeholder="年" data-part="y" /><input type="text" placeholder="月" data-part="m" /></span>
   </div>
-  <div class="apply-field-2 string_info-UOJ apply-padding">
+  <div class="apply-field-2 string_info-UOJ apply-padding select-box">
     <span class="title-IWWQ"><span><span>奖项名称</span></span></span>
-    <span class="ctrl"><input type="text" placeholder="奖项名称" /></span>
+    <span class="ctrl" style="position:relative">
+      <input type="text" class="sd-select-input" placeholder="奖项名称" readonly />
+      <ul class="sd-options" style="display:none"><li>国家奖学金</li><li>校一等奖学金</li><li>省三等奖</li></ul>
+    </span>
   </div>
 </template>
 
@@ -102,9 +108,6 @@
 <script>
   document.getElementById("award-add").addEventListener("click", () => {
     const box = document.querySelector(".apply-fields-Q2iJ");
-    document.querySelectorAll("#award-tpl").length &&
-      document.getElementById("award-tpl").content.childNodes.forEach(() => {});
-    [...document.getElementById("award-tpl").content.children].forEach(() => {});
     const frag = document.getElementById("award-tpl").content;
     [...frag.children].forEach((n) => box.appendChild(n.cloneNode(true)));
   });
@@ -113,6 +116,33 @@
     const frag = document.getElementById("proj-tpl").content;
     [...frag.children].forEach((n) => box.appendChild(n.cloneNode(true)));
   });
+
+  // 模拟 React 根节点事件委托：单个 document 级监听处理下拉展开/点选/点外关闭。
+  // 注意：不冒泡的 click 到不了这里（和真实 Moka/React 行为一致）
+  document.addEventListener("click", (e) => {
+    const trigger = e.target.closest && e.target.closest(".sd-select-input");
+    document.querySelectorAll(".sd-options").forEach((o) => {
+      if (o.style.display !== "none" && !(trigger && o.parentElement.contains(trigger))) {
+        o.style.display = "none";
+      }
+    });
+    if (trigger) {
+      const panel = trigger.parentElement.querySelector(".sd-options");
+      panel.style.display = panel.style.display === "none" ? "block" : "none";
+    }
+    const li = e.target.closest && e.target.closest(".sd-options li");
+    if (li) {
+      const input = li.closest(".select-box").querySelector(".sd-select-input");
+      input.value = li.textContent;
+      li.parentElement.style.display = "none";
+    }
+  });
 </script>
+<style>
+  .sd-options { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #e0e4ea;
+    border-radius: 6px; box-shadow: 0 6px 16px rgba(0,0,0,.12); z-index: 50; list-style: none; margin: 4px 0 0; padding: 0; }
+  .sd-options li { padding: 7px 12px; cursor: pointer; }
+  .sd-options li:hover { background: #f0f6ff; }
+</style>
 </body>
 </html>
