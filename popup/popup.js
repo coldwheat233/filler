@@ -346,7 +346,6 @@ async function init() {
   $("llm-model").value = cfg.model || "";
   $("llm-key").value = cfg.apiKey || "";
   refreshLLMState();
-  $("link-demo").href = chrome.runtime.getURL("demo/demo_form.html");
 
   bindTabs();
   bindDelegation();
