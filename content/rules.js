@@ -10,23 +10,34 @@ const FW_RULES = [
   ["basic.first_pinyin", ["名全拼", "名拼音", "名字拼音"]],
   ["basic.gender", ["性别", "gender", "sex"]],
   ["basic.birth_date", ["出生", "生日", "birth"]],
+  // IM/户口地的关键词含「联系/所在地」等宽泛词，必须排在 phone/city 之前
+  ["basic.im", ["im联系方式", "im联系"]],
   ["basic.phone", ["手机", "电话", "mobile", "phone", "tel", "联系"]],
   ["basic.email", ["邮箱", "邮件", "email", "e-mail"]],
   ["basic.id_type", ["证件类型", "证件种类"]],
   ["basic.id_card", ["身份证", "证件号", "id card", "identity"]],
   ["basic.nationality", ["国籍", "nationality"]],
+  ["basic.childhood_city", ["童年时所在城市", "童年", "儿时"]],
+  ["basic.huji_place", ["户口所在地", "户口地", "户籍地"]],
   ["basic.city", ["现居住", "居住地", "所在地", "现居", "常住"]],
   ["basic.native_place", ["籍贯", "生源地"]],
   ["basic.huji_type", ["户口性质", "户口类型", "户籍类型"]],
+  ["basic.huji_place", ["户口所在地", "户口地", "户籍地"]],
   ["basic.political", ["政治面貌", "政治", "political"]],
   ["basic.ethnic", ["民族", "ethnic"]],
   ["basic.height", ["身高"]],
   ["basic.weight", ["体重"]],
+  ["basic.religion", ["宗教信仰", "宗教"]],
   ["basic.marital", ["婚否", "婚姻", "婚况"]],
   ["basic.qq", ["qq", "扣扣"]],
   ["basic.wechat", ["微信", "wechat", "weixin"]],
   ["basic.homepage", ["个人主页", "博客", "homepage", "github"]],
   ["basic.portfolio", ["作品链接", "作品集", "网盘", "portfolio"]],
+  ["basic.weibo", ["微博"]],
+  ["basic.zhihu", ["知乎"]],
+  ["basic.douban", ["豆瓣"]],
+  ["basic.xiaohongshu", ["小红书"]],
+  ["basic.bilibili", ["b站", "bilibili"]],
   ["edu.benke_school", ["本科学校", "本科院校"]],
   ["edu.graduate_school", ["毕业学校", "毕业院校", "研究生学校"]],
   ["edu.benke_subject", ["本科学科"]],
@@ -50,19 +61,35 @@ const FW_RULES = [
   ["expect.adjust", ["岗位调剂", "服从调剂", "调剂"]],
   ["expect.position", ["应聘岗位", "意向岗位", "申请职位", "求职意向", "岗位", "position"]],
   ["expect.city", ["期望城市", "意向城市", "期望工作地", "工作城市", "意向地点"]],
-  ["expect.salary", ["期望薪资", "期望薪酬", "薪资", "薪酬", "salary", "月薪"]],
+  ["expect.salary_5y", ["五年后年薪", "五年后期望", "五年后"]],
+  ["expect.salary", ["期望入职年薪", "期望年薪", "期望薪资", "期望薪酬", "年薪", "薪资", "薪酬", "salary", "月薪"]],
   ["expect.source", ["信息来源", "招聘来源", "校招来源", "来源渠道"]],
   ["expect.refcode", ["推荐码", "内推码", "推荐人"]],
   ["extra.obey", ["服从公司分配", "服从分配"]],
   ["extra.dispatch", ["接受外派", "外派"]],
   ["extra.overseas", ["海外欠发达", "海外分配", "海外工作", "驻外"]],
   ["extra.relatives", ["亲属"]],
+  ["extra.intern_before_grad", ["毕业前能否实习", "毕业前实习", "能否实习"]],
+  ["extra.gaokao_math", ["高考数学", "高考成绩"]],
+  ["extra.smoke", ["吸烟", "抽烟"]],
+  ["extra.infectious", ["传染病"]],
+  ["extra.major_illness", ["重大病史"]],
+  ["extra.chronic", ["慢性疾病", "慢性病"]],
+  ["games_meta.total_hours", ["游戏上的总时长", "游戏总时长"]],
+  ["games_meta.total_spend", ["游戏上的总花费", "游戏总花费"]],
+  ["games_meta.console_games", ["单机游戏"]],
+  ["games_meta.online_games", ["网络游戏"]],
+  ["games_meta.mobile_games", ["手机游戏"]],
   ["self.description", ["自我描述", "自我评价", "自我介绍", "个人描述", "个人简介"]],
 ];
 
 // 重复段落主题：添加按钮文案 / 条目字段 label 命中 => 对应简历中的哪个列表。
-// 注意顺序：宽泛主题（技能/证书）放最后，避免语言能力里的“证书”被抢走
+// 顺序即优先级：家庭成员/校园活动/竞赛 含「工作」「奖项」等宽泛词，
+// 必须排在实习/获奖之前，否则会被后者抢走
 const FW_REPEATER_THEMES = [
+  ["family", ["家庭成员", "家庭信息", "父母", "亲属", "family"]],
+  ["activities", ["校园活动", "社团", "协会", "学生组织", "学生工作", "activity"]],
+  ["competitions", ["竞赛", "比赛", "contest", "competition"]],
   ["internships", ["实习", "工作经历", "工作经验", "工作", "internship", "work experience"]],
   ["projects", ["项目", "project"]],
   ["awards", ["获奖", "奖项", "荣誉", "奖学金", "award", "honor"]],
@@ -77,6 +104,28 @@ const FW_REPEATER_THEMES = [
 // 重复段落内部子字段：主题 -> [[条目子键, 关键词...]]
 // 每个主题内规则顺序即优先级：具体词在前，宽泛词在后
 const FW_THEME_SUBFIELD_RULES = {
+  family: [
+    ["name", ["姓名", "name"]],
+    ["relation", ["关系", "称谓"]],
+    ["age", ["年龄", "年纪"]],
+    ["job", ["职业"]],
+    ["position", ["职位", "职务"]],
+    ["company", ["工作单位", "单位", "公司"]],
+  ],
+  activities: [
+    ["org", ["组织单位", "单位", "协会", "社团", "组织"]],
+    ["role", ["职务", "角色", "担任", "role"]],
+    ["start", ["开始", "起始", "start"]],
+    ["end", ["结束", "end"]],
+    ["description", ["工作内容", "内容", "描述", "description"]],
+  ],
+  competitions: [
+    ["name", ["竞赛奖项", "竞赛名称", "比赛名称", "奖项名称", "名称", "name"]],
+    ["prize", ["奖励级别", "获奖等级", "奖项等级", "奖励等级", "奖励"]],
+    ["level", ["竞赛级别", "级别", "level"]],
+    ["date", ["时间", "日期", "date"]],
+    ["description", ["竞赛说明", "说明", "描述", "description"]],
+  ],
   internships: [
     ["company", ["单位名称", "公司名称", "公司", "单位", "企业", "机构", "employer", "company"]],
     ["title", ["职位", "岗位", "职务", "角色", "担任", "role", "title"]],
@@ -125,8 +174,10 @@ const FW_THEME_SUBFIELD_RULES = {
   ],
   games: [
     ["hours", ["时长", "游戏时间", "hours"]],
+    ["level", ["游戏等级", "段位", "等级", "level"]],
+    ["rank", ["排名", "名次", "rank"]],
     ["name", ["游戏名称", "游戏名", "名称", "name"]],
-    ["depth", ["游玩程度", "程度", "体验", "理解", "描述", "description"]],
+    ["depth", ["精通程度", "游玩程度", "程度", "体验", "理解", "描述", "description"]],
   ],
 };
 

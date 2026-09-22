@@ -76,6 +76,23 @@ function fwSiblingText(el) {
   return "";
 }
 
+// 表格型段落（如家庭成员）：单元格里的控件没有 label，
+// 取它所在列的表头（thead 或首行）文本作为 label
+function fwTableColumnLabel(el) {
+  const cell = el.closest("td,th");
+  if (!cell) return "";
+  const row = cell.parentElement;
+  const table = cell.closest("table");
+  if (!table || !row) return "";
+  const idx = Array.prototype.indexOf.call(row.children, cell);
+  const headRow = table.tHead && table.tHead.rows.length ? table.tHead.rows[0] : table.rows[0];
+  if (!headRow || headRow === row) return "";
+  const th = headRow.children[idx];
+  if (!th) return "";
+  const t = (th.innerText || "").replace(/\s+/g, " ").trim();
+  return t.slice(0, 60);
+}
+
 function fwLabelFor(el) {
   if (el.id) {
     const esc = window.CSS && CSS.escape ? CSS.escape(el.id) : el.id;
@@ -91,6 +108,8 @@ function fwLabelFor(el) {
   if (aria && aria.trim()) return aria.trim().slice(0, 60);
   const title = el.getAttribute("title");
   if (title && title.trim() && el.tagName === "INPUT") return title.trim().slice(0, 60); // 并排日期框等靠 title 区分
+  const tbl = fwTableColumnLabel(el);
+  if (tbl) return tbl;
   const gt = fwGroupText(el);
   if (gt) return gt;
   const st = fwSiblingText(el);
