@@ -530,5 +530,6 @@ function extractForm() {
     fields,
     repeaters,
     softRepeaters,
+    mokaContainers,
   };
 }

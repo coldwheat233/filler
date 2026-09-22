@@ -146,6 +146,14 @@ async function fwFillDropdown(triggerEl, value, log) {
     }
   }
   if (idx == null) {
+    // 自由输入型下拉：打字本身已经把值写进输入框了，视为有效填写
+    if (triggerEl.tagName === "INPUT") {
+      const typed = (triggerEl.value || "").trim();
+      const v = String(value).trim();
+      if (typed && (typed === v || v.includes(typed))) {
+        return { ok: true, msg: "ok(已键入，站点无匹配选项)" };
+      }
+    }
     document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
     return { ok: false, msg: "选项未命中: " + value + "（可见: " + labels.slice(0, 6).join("|") + "）" };
   }

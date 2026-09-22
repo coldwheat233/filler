@@ -18,7 +18,24 @@ SUB_RULES = [
 ]
 
 
-def handle_prompt(user):
+def handle_prompt(system, user):
+    # 0) AI 兜底填空：从简历数据里挑值
+    if "最合适的填写值" in (system or ""):
+        canned = {
+            "工作经验": "应届毕业生（2027届）",
+            "最近公司": "暂无",
+            "期望城市": "北京",
+            "个人资料": "详见附件简历",
+        }
+        fills = []
+        for m in re.finditer(r"key=(\w+) label=「([^」]*)」", user):
+            key, label = m.group(1), m.group(2)
+            for kw, val in canned.items():
+                if kw in label:
+                    fills.append({"key": key, "value": val})
+                    break
+        return {"fills": fills}
+
     # 1) 顶层字段映射
     if "表单字段" in user and "mappings" not in user:
         mappings = []
@@ -77,8 +94,9 @@ class Handler(BaseHTTPRequestHandler):
         n = int(self.headers.get("Content-Length", 0))
         body = json.loads(self.rfile.read(n))
         msgs = body.get("messages", [])
+        system = next((m["content"] for m in msgs if m.get("role") == "system"), "")
         user = next((m["content"] for m in msgs if m.get("role") == "user"), "")
-        content = json.dumps(handle_prompt(user), ensure_ascii=False)
+        content = json.dumps(handle_prompt(system, user), ensure_ascii=False)
         resp = json.dumps(
             {"choices": [{"message": {"role": "assistant", "content": content}}]}
         ).encode("utf-8")

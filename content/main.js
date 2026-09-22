@@ -65,6 +65,48 @@ async function fwStart() {
   return fwRun(profile, form);
 }
 
+// 早期主题解析：在字段匹配之前跑，决定每个标准段落的去留——
+// - 包住 Moka 容器的上层模块：适配器已接管，直接丢弃（否则其父节点会把顶层字段全排除）
+// - 认不出主题的段落：溶解——把第一块的字段释放回顶层字段，走正常匹配 + AI 兜底，
+//   而不是整段跳过留空
+async function fwEarlyResolve(form, profile) {
+  const mokaCs = form.mokaContainers || [];
+  const kept = [];
+  for (const rep of form.repeaters) {
+    if (rep.sig && rep.sig.startsWith("moka|")) { kept.push(rep); continue; }
+    const item0 = rep.getItems ? rep.getItems()[0] : null;
+    const wrapsMoka = mokaCs.some(
+      (c) => (item0 && c.contains(item0)) || (rep.el && c.contains(rep.el))
+    );
+    if (wrapsMoka) continue; // 适配器已接管的上层模块，丢弃
+    const theme = await fwResolveTheme(rep, profile);
+    if (!theme) {
+      // 溶解：第一块的字段回顶层（els 现取，避免引用过期）
+      let released = 0;
+      for (const f of rep.fields) {
+        const el = fwLocateItemField(rep, 0, f);
+        if (!el) continue;
+        form.fields.push({
+          key: "d" + form.fields.length, el,
+          style: f.style, tag: el.tagName.toLowerCase(),
+          id: f.id || "", name: f.name || "", label: f.label || "",
+          placeholder: f.placeholder || "", required: !!f.required,
+          options: f.options || null,
+          sig: f.sig + "|dissolved",
+        });
+        released++;
+      }
+      console.info(
+        "[网申填报助手] 段落「" + (rep.addText || rep.sig.slice(0, 24)) + "」未识别主题，已溶解 " +
+          released + " 个字段为顶层字段"
+      );
+      continue;
+    }
+    kept.push(rep);
+  }
+  form.repeaters = kept;
+}
+
 async function fwRun(profile, form) {
   // 诊断输出：用户可按 F12 查看，便于远程排查站点识别问题
   console.info(
@@ -76,6 +118,7 @@ async function fwRun(profile, form) {
         form.softRepeaters.map((s) => "「" + s.cls + "」").join("、")
       : ""
   );
+  await fwEarlyResolve(form, profile);
   await fwMatchForm(form, profile);
   const steps = await fwBuildSteps(form, profile);
   // LLM 配置了但调用失败时，明确告诉用户而不是悄悄退化成离线模式
@@ -97,6 +140,11 @@ async function fwMatchForm(form, profile) {
   const pending = [];
   for (const f of form.fields) {
     const c = fwCacheGet(cache, fp, f.sig);
+    if (c && c.literal) {
+      f.value = c.literal;
+      f.method = "缓存";
+      continue;
+    }
     if (c && c.path && fwGetByPath(profile, c.path) !== undefined) {
       f.path = c.path;
       f.method = "缓存";
@@ -113,6 +161,12 @@ async function fwMatchForm(form, profile) {
   }
   if (pending.length && (await fwHasLLM())) {
     await fwLLMMatchFields(pending, profile, fp);
+  }
+  // AI 兜底填空：映射不到路径的字段，让 LLM 从简历数据里挑最合适的值直接填，
+  // 不留空（禁止编造：只允许原样使用简历数据中出现过的内容）
+  const stillUnmatched = pending.filter((f) => !f.path && !f.value);
+  if (stillUnmatched.length && (await fwHasLLM())) {
+    await fwLLMFillGaps(stillUnmatched, profile, fp);
   }
   await fwSaveCache(cache);
 }
@@ -149,6 +203,36 @@ async function fwLLMMatchFields(pending, profile, fp) {
   await fwSaveCache(cache);
 }
 
+// AI 兜底填空：映射不到简历路径的字段，让 LLM 从简历数据里挑最合适的值直接填
+async function fwLLMFillGaps(pending, profile, fp) {
+  const listing = pending
+    .map((f) => `- key=${f.key} label=「${f.label || ""}」形态=${f.style}`)
+    .join("\n");
+  const data = await fwLLMChatJSON(
+    "你是网申表单填报助手。对每个表单字段，从用户简历数据里找出最合适的填写值。\n" +
+      "规则：只能原样使用简历数据中出现过的内容（可以截取其中一部分，比如从日期里取年份），" +
+      "禁止编造；实在没有合适的就输出 null。\n" +
+      '只输出 JSON：{"fills": [{"key": "字段key", "value": "填写值"}]}',
+    "【用户简历数据】\n" + fwDescribeProfile(profile) + "\n\n【表单字段】\n" + listing
+  );
+  if (!data) return;
+  const byKey = {};
+  pending.forEach((f) => (byKey[f.key] = f));
+  (data.fills || []).forEach((m) => {
+    const f = byKey[m.key];
+    if (f && m.value != null && String(m.value).trim() !== "") {
+      f.value = String(m.value);
+      f.match_method = "LLM兜底";
+    }
+  });
+  // 兜底值直接进缓存（value 型映射），同站点二次填报不再请求
+  const cache = await fwLoadCache();
+  pending.forEach((f) => {
+    if (f.value) fwCacheSet(cache, fp, f.sig, { literal: f.value, label: f.label });
+  });
+  await fwSaveCache(cache);
+}
+
 // ---------------- 填报计划构建 ----------------
 async function fwPrematchOption(st, options) {
   const { idx, how } = fwMatchOption(options, st.value);
@@ -171,7 +255,7 @@ async function fwBuildSteps(form, profile) {
 
   // 1) 顶层字段
   for (const f of form.fields) {
-    const value = fwGetByPath(profile, f.path);
+    const value = f.value != null && f.value !== "" ? f.value : fwGetByPath(profile, f.path);
     if (value == null || value === "") continue;
     const st = {
       kind: "fill", field: f,
@@ -182,8 +266,10 @@ async function fwBuildSteps(form, profile) {
     steps.push(st);
   }
 
-  // 未匹配字段也提示出来（保持留空、人工填写），与 README 描述一致
-  const unmatchedTop = form.fields.filter((f) => !f.path).map((f) => f.label || f.name || f.key);
+  // 未匹配且没有任何兜底值的字段才提示人工
+  const unmatchedTop = form.fields
+    .filter((f) => !f.path && !f.value)
+    .map((f) => f.label || f.name || f.key);
   if (unmatchedTop.length) {
     steps.push({
       kind: "info", style: "section",
