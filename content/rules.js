@@ -135,11 +135,12 @@ const FW_THEME_SUBFIELD_RULES = {
     ["description", ["内容", "描述", "职责", "业绩", "简介", "工作", "description"]],
   ],
   projects: [
-    ["name", ["项目名称", "项目经历名称", "项目", "名称", "name"]],
+    // 不放裸「项目」：否则「项目职务」会被 name 抢走（职务栏填成项目名）
+    ["name", ["项目名称", "项目经历名称", "名称", "name"]],
     ["role", ["项目职务", "职务", "角色", "担任", "职责", "我的", "role"]],
     ["start", ["开始", "起始", "start"]],
     ["end", ["结束", "end"]],
-    ["description", ["描述", "内容", "简介", "业绩", "description"]],
+    ["description", ["项目描述", "描述", "内容", "简介", "业绩", "description"]],
   ],
   awards: [
     ["name", ["奖项名称", "奖项", "名称", "荣誉", "award", "name"]],

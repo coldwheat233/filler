@@ -44,6 +44,12 @@ async function fwStart() {
 }
 
 async function fwRun(profile, form) {
+  // 诊断输出：用户可按 F12 查看，便于远程排查站点识别问题
+  console.info(
+    "[网申填报助手] 识别到 " + form.fields.length + " 个字段、 " + form.repeaters.length + " 个重复段落:",
+    form.repeaters.map((r) => (r.theme || "未识别主题") + "×" + r.count + (r.addBtn ? "(有添加按钮:「" + r.addText + "」)" : "(未识别到添加按钮)")).join("；")
+      || "（无）"
+  );
   await fwMatchForm(form, profile);
   const steps = await fwBuildSteps(form, profile);
   // LLM 配置了但调用失败时，明确告诉用户而不是悄悄退化成离线模式
@@ -304,8 +310,14 @@ async function fwExecute(selected) {
       FWPanel.status(st, "添加块中…");
       try {
         const need = Number(st.value || 0);
-        const added = need > 0 ? await fwEnsureCount(st.rep, st.targetCount) : 0;
-        FWPanel.status(st, added ? `√ 已添加 ${added} 块` : "√ 无需添加", added ? "ok" : "");
+        const rep = st.rep;
+        const added = need > 0 ? await fwEnsureCount(rep, st.targetCount) : 0;
+        // 显式校验块数：目标 vs 实际，不达标按失败处理
+        const now = rep.getItems().length;
+        if (now < st.targetCount) {
+          throw new Error("块数校验失败：目标 " + st.targetCount + " 块，实际 " + now + " 块");
+        }
+        FWPanel.status(st, added ? `√ 已添加 ${added} 块（现 ${now} 块）` : "√ 无需添加", added ? "ok" : "");
       } catch (e) {
         FWPanel.status(st, "× " + ((e && e.message) || e), "fail");
       }
@@ -330,6 +342,15 @@ async function fwExecute(selected) {
 
   // 回读校验
   const verify = [];
+  // 先校验各段落块数：目标块数 vs 实际块数
+  for (const st of selected) {
+    if (st.kind !== "add_blocks") continue;
+    const cur = st.rep ? st.rep.getItems().length : 0;
+    verify.push([
+      "◇ " + (st.label || "段落") + " 块数",
+      cur >= st.targetCount ? "√ 现有 " + cur + " 块" : `× 目标 ${st.targetCount} 块，实际 ${cur} 块`,
+    ]);
+  }
   for (const st of selected) {
     if (st.kind === "info" || st.kind === "add_blocks") continue;
     if (st.filled === undefined) continue;
