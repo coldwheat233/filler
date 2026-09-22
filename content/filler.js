@@ -57,43 +57,75 @@ function fwClickLikeUser(el, opts) {
   else el.dispatchEvent(new MouseEvent("click", mouseOpts));
 }
 
-const FW_OPTION_SEL = 'li,[role=option],.el-select-dropdown__item,.ant-select-item-option,.select-option,[class*="dropdown-menu"] li,[class*="options"] li,[class*="menu"] li,[class*="dropdown"] li,[class*="popover"] li,[class*="list"] li';
+const FW_OPTION_SEL = 'li,[role=option],.el-select-dropdown__item,.ant-select-item-option,.select-option,[class*="dropdown"] li,[class*="menu"] li,[class*="popover"] li,[class*="options"] li,[class*="portal"] div,[class*="Dropdown"] div,[class*="select"] div';
 
-function fwVisibleOptionEls() {
-  const out = new Set();
-  document.querySelectorAll(FW_OPTION_SEL).forEach((o) => {
-    if (fwVisible(o)) out.add(o);
+function fwAllVisibleSet() {
+  const s = new Set();
+  document.querySelectorAll("body *").forEach((el) => {
+    if (fwVisible(el)) s.add(el);
   });
-  return out;
+  return s;
 }
 
-// 点击后只认「新出现的选项」，排除导航栏之类常驻 li 的噪音
-async function fwWaitNewOptions(beforeSet) {
-  for (let i = 0; i < 8; i++) {
+// 点开面板后，找出「新出现的叶子级带文本元素」作为选项——
+// 不依赖具体标签（有的库用 li、有的用 div），全页差集天然适配 body 挂载的门户
+function fwFreshLeafOptions(before) {
+  const fresh = new Set();
+  document.querySelectorAll("body *").forEach((el) => {
+    if (!before.has(el) && fwVisible(el)) fresh.add(el);
+  });
+  const out = [];
+  fresh.forEach((el) => {
+    for (const c of el.children) {
+      if (fresh.has(c)) return; // 面板容器等非叶子节点
+    }
+    const t = (el.innerText || "").replace(/\s+/g, " ").trim();
+    if (t && t.length <= 40) out.push({ el, text: t });
+  });
+  const seen = new Set();
+  return out.filter((x) => (seen.has(x.text) ? false : (seen.add(x.text), true)));
+}
+
+async function fwPollFreshOptions(before, rounds) {
+  for (let i = 0; i < (rounds || 6); i++) {
     await fwSleep(150);
-    const now = fwVisibleOptionEls();
-    const fresh = [...now].filter((o) => !beforeSet.has(o));
-    if (fresh.length) return fresh;
+    const r = fwFreshLeafOptions(before);
+    if (r.length) return r;
   }
   return [];
 }
 
 async function fwFillDropdown(triggerEl, value, log) {
-  const beforeSet = fwVisibleOptionEls();
-  // 展开：先试冒泡点击（React/Vue 事件委托在根节点，必须冒泡才收得到），
-  // 不行再试不冒泡（防「点击空白处关闭」的全局监听），最后重试一次冒泡
-  let texts = null;
-  for (const bubble of [true, false, true]) {
-    fwClickLikeUser(triggerEl, { bubble });
-    const fresh = await fwWaitNewOptions(beforeSet);
-    if (fresh.length) { texts = fresh.map((o) => (o.innerText || "").replace(/\s+/g, " ").trim()).filter(Boolean); break; }
+  // 展开策略轮试：
+  // 1) 完整点击（冒泡）——React/Vue 根委托能收到
+  // 2) 只按下去（pointerdown+mousedown）——「mousedown 展开、click 收起」的
+  //    toggle 型下拉（Moka sd-Select）用完整点击会开了又关，只按下去保持展开
+  // 3) 完整点击（不冒泡）——防「点击空白处关闭」全局监听的站点
+  // 4) 再来一轮完整冒泡点击（个别站点点两次才开）
+  const before = fwAllVisibleSet();
+  const rect = triggerEl.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+  const pressOnly = () => {
+    const po = { bubbles: true, cancelable: true, view: window, pointerId: 1, pointerType: "mouse", isPrimary: true, clientX: cx, clientY: cy };
+    const mo = { bubbles: true, cancelable: true, view: window, clientX: cx, clientY: cy };
+    try { triggerEl.dispatchEvent(new PointerEvent("pointerdown", po)); } catch (e) {}
+    triggerEl.dispatchEvent(new MouseEvent("mousedown", mo));
+  };
+  const modes = [
+    () => fwClickLikeUser(triggerEl, { bubble: true }),
+    pressOnly,
+    () => fwClickLikeUser(triggerEl, { bubble: false }),
+    () => fwClickLikeUser(triggerEl, { bubble: true }),
+  ];
+  let opts = [];
+  for (const mode of modes) {
+    mode();
+    opts = await fwPollFreshOptions(before, 5);
+    if (opts.length) break;
   }
-  if (texts == null) {
-    const all = [...fwVisibleOptionEls()].map((o) => (o.innerText || "").replace(/\s+/g, " ").trim()).filter(Boolean);
-    texts = [...new Set(all)];
-  }
-  if (!texts.length) return { ok: false, msg: "展开下拉失败：未出现可见选项" };
-  const labels = [...new Set(texts)];
+  if (!opts.length) return { ok: false, msg: "展开下拉失败：未出现新选项面板" };
+
+  const labels = opts.map((x) => x.text);
   let { idx, how } = fwMatchOption(labels, value);
   if (idx == null) {
     const pick = await fwLLMPickOption(labels, value);
@@ -106,22 +138,7 @@ async function fwFillDropdown(triggerEl, value, log) {
     document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
     return { ok: false, msg: "选项未命中: " + value + "（可见: " + labels.slice(0, 6).join("|") + "）" };
   }
-  const target = labels[idx];
-  // 点选：优先刚才新出现的元素，找不到再全页找同文本可见项
-  const opts = fwVisibleOptionEls();
-  let clicked = false;
-  for (const o of opts) {
-    const t = (o.innerText || "").replace(/\s+/g, " ").trim();
-    if (t === target) {
-      fwClickLikeUser(o);
-      clicked = true;
-      break;
-    }
-  }
-  if (!clicked) {
-    document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-    return { ok: false, msg: "选项已匹配但点击失败" };
-  }
+  fwClickLikeUser(opts[idx].el);
   await fwSleep(250);
   return { ok: true, msg: "ok(" + how + "匹配)" };
 }
