@@ -216,6 +216,7 @@ function extractForm() {
   // ---------- 重复段落 ----------
   const repeaters = [];
   let excludeParents = [];
+  let softRepeaters = [];
   (function detect() {
     const seen = new Set();
     const groups = [];
@@ -263,17 +264,24 @@ function extractForm() {
     }
 
     // 候选段落过滤：
-    // - 单块且没有「添加」按钮：不是可扩展段落，字段改按顶层字段处理。
-    //   否则 SPA 根节点（如 div.app-root）这类“唯一大容器”会被误判成段落，
-    //   它的父节点又被当成排除区，整页字段直接清零（金山网申实测踩坑）。
-    // - 单块且吞下页面九成以上可填控件：明显是表单容器，同样拒绝。
+    // - 吞下页面九成以上可填控件的单块容器（SPA 根节点）=> 拒绝
+    // - 其余单块但没有「添加」按钮的 => 也不当段落（字段按顶层处理），
+    //   但记录到 softRepeaters，供面板/控制台提示「这里疑似可扩展段落但没认出按钮」
     const pageControlCount = document.querySelectorAll(FW_CONTROL_FILL).length;
+    const soft = [];
     const real = kept.filter((g) => {
       if (g.items.length !== 1) return true;
       const own = g.el.querySelectorAll(FW_CONTROL_FILL).length;
       const share = pageControlCount > 0 ? own / pageControlCount : 0;
       if (share >= 0.9) return false;
-      return !!btnFor.get(g);
+      if (!btnFor.get(g)) {
+        soft.push({
+          cls: g.cls,
+          labels: fwCollectItemFields(g.items[0]).map((f) => f.label).slice(0, 8),
+        });
+        return false;
+      }
+      return true;
     });
 
     real.forEach((g, gi) => {
@@ -302,6 +310,7 @@ function extractForm() {
       repeaters.push(rep);
     });
     excludeParents = real.map((g) => g.parent);
+    softRepeaters = soft;
   })();
 
   const inExcl = (el) => excludeParents.some((p) => p.contains(el));
@@ -379,5 +388,6 @@ function extractForm() {
     fingerprint: (h >>> 0).toString(16),
     fields,
     repeaters,
+    softRepeaters,
   };
 }

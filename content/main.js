@@ -2,7 +2,29 @@
 // 流程：抽取表单 -> 字段匹配（规则 -> 缓存 -> LLM）-> 生成填报计划 ->
 //       悬浮面板展示（选择式/自定义式提示）-> 用户确认 -> 执行 -> 回读校验
 
+// 页面快照导出：站点适配需要真实 DOM。内容脚本把 outerHTML 存为下载文件，
+// 用户把文件发给开发者即可精准定位「添加」按钮/段落结构。（注意：快照包含页面上已填内容）
+function fwSnapshot() {
+  const html = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+  const blob = new Blob([html], { type: "text/html" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "fw-snapshot-" + (location.hostname || "page") + "-" + Date.now() + ".html";
+  document.documentElement.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 10000);
+}
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg && msg.cmd === "FW_SNAPSHOT") {
+    try {
+      fwSnapshot();
+      sendResponse({ ok: true });
+    } catch (e) {
+      sendResponse({ error: String((e && e.message) || e) });
+    }
+    return undefined;
+  }
   if (msg && msg.cmd === "FW_PLAN") {
     (async () => {
       const profile = await fwLoadProfile();
@@ -48,7 +70,11 @@ async function fwRun(profile, form) {
   console.info(
     "[网申填报助手] 识别到 " + form.fields.length + " 个字段、 " + form.repeaters.length + " 个重复段落:",
     form.repeaters.map((r) => (r.theme || "未识别主题") + "×" + r.count + (r.addBtn ? "(有添加按钮:「" + r.addText + "」)" : "(未识别到添加按钮)")).join("；")
-      || "（无）"
+      || "（无）",
+    (form.softRepeaters || []).length
+      ? "另有 " + form.softRepeaters.length + " 个疑似段落未识别到添加按钮: " +
+        form.softRepeaters.map((s) => "「" + s.cls + "」").join("、")
+      : ""
   );
   await fwMatchForm(form, profile);
   const steps = await fwBuildSteps(form, profile);
@@ -163,6 +189,17 @@ async function fwBuildSteps(form, profile) {
       kind: "info", style: "section",
       label: `${unmatchedTop.length} 个字段未能匹配（保持留空，人工填写）`,
       note: unmatchedTop.join("、"),
+    });
+  }
+
+  // 疑似可扩展段落但没认出「添加」按钮：明确告知用户，否则表现为「只填第一块」
+  const soft = form.softRepeaters || [];
+  if (soft.length) {
+    steps.push({
+      kind: "info", style: "section",
+      label: `⚠ ${soft.length} 个疑似可扩展段落未识别到「添加」按钮`,
+      note: soft.map((s) => `容器「${s.cls}」字段: ${s.labels.join("/") || "?"}`).join("；").slice(0, 160) +
+        "｜已按普通字段处理，只能填现有块；多块扩展请手动点添加后重新生成计划",
     });
   }
 

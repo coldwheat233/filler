@@ -395,6 +395,16 @@ async function init() {
     }
   });
   $("btn-plan").addEventListener("click", startPlan);
+  $("btn-snapshot").addEventListener("click", async () => {
+    try {
+      const [t] = await chrome.tabs.query({ active: true, currentWindow: true });
+      const resp = await chrome.tabs.sendMessage(t.id, { cmd: "FW_SNAPSHOT" });
+      if (resp && resp.error) throw new Error(resp.error);
+      msg("snap-msg", "√ 已下载快照文件", "ok");
+    } catch (e) {
+      msg("snap-msg", "导出失败: " + (e.message || e), "err");
+    }
+  });
   $("btn-save-llm").addEventListener("click", saveLLM);
   $("btn-test-llm").addEventListener("click", async () => {
     // 先把当前输入保存下去再测，避免测的是旧配置
