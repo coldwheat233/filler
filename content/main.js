@@ -4,11 +4,21 @@
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg && msg.cmd === "FW_PLAN") {
-    fwStart()
-      .then(() => sendResponse({ ok: true }))
+    (async () => {
+      const profile = await fwLoadProfile();
+      const form = extractForm();
+      return { profile, form };
+    })()
+      .then(({ profile, form }) => {
+        // 表单可能在 iframe 里：内容脚本注入了所有 frame，
+        // 本帧没找到表单就不响应，把接管权让给有表单的帧；
+        // 所有帧都没有表单时，popup 侧会收到连接错误并提示用户。
+        if (!form.fields.length && !form.repeaters.length) return;
+        try { sendResponse({ ok: true }); } catch (e) { /* 别的帧先响应了 */ }
+        fwRun(profile, form).catch((e) => FWPanel.error((e && e.message) || String(e)));
+      })
       .catch((e) => {
-        FWPanel.error((e && e.message) || String(e));
-        sendResponse({ error: String((e && e.message) || e) });
+        try { sendResponse({ error: String((e && e.message) || e) }); } catch (e2) { /* ignore */ }
       });
     return true;
   }
@@ -18,17 +28,22 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 async function fwLoadProfile() {
   const { profile } = await chrome.storage.local.get("profile");
   if (!profile || typeof profile !== "object") {
-    throw new Error("尚未配置简历：点击浏览器工具栏的插件图标，在弹窗中粘贴/编辑简历 JSON 后保存");
+    throw new Error("尚未配置简历：点击浏览器工具栏的插件图标，在弹窗中填写简历后保存");
   }
   return profile;
 }
 
+// 供注入测试使用的入口：本帧直接跑
 async function fwStart() {
   const profile = await fwLoadProfile();
   const form = extractForm();
   if (!form.fields.length && !form.repeaters.length) {
     throw new Error("本页未识别到表单字段");
   }
+  return fwRun(profile, form);
+}
+
+async function fwRun(profile, form) {
   await fwMatchForm(form, profile);
   const steps = await fwBuildSteps(form, profile);
   FWPanel.show(steps, { onConfirm: (selected) => fwExecute(selected) });

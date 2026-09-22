@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>SPA 式表单回归测试</title>
+<style>
+  body { font: 14px/1.6 "Microsoft YaHei", sans-serif; background: #f0f2f5; }
+  .wrap { max-width: 700px; margin: 30px auto; background: #fff; border-radius: 8px; padding: 24px 32px; }
+  .form-item { display: flex; gap: 10px; margin-bottom: 12px; }
+  .field-label { width: 110px; text-align: right; color: #555; }
+  input, select { flex: 1; border: 1px solid #d0d7de; border-radius: 6px; padding: 6px 10px; }
+</style>
+</head>
+<body>
+  <!-- 模拟金山网申：唯一 .app-root 大容器包住全部字段，没有任何「添加」按钮 -->
+  <div class="app">
+    <div class="app-root">
+      <div class="wrap">
+        <h2>简历信息</h2>
+        <div class="form-item">
+          <div class="field-label">姓名</div>
+          <input type="text" id="name" placeholder="请输入" />
+        </div>
+        <div class="form-item">
+          <div class="field-label">手机号</div>
+          <input type="text" id="phone" placeholder="请输入" />
+        </div>
+        <div class="form-item">
+          <div class="field-label">邮箱</div>
+          <input type="text" id="email" placeholder="请输入" />
+        </div>
+        <div class="form-item">
+          <div class="field-label">性别</div>
+          <select id="gender"><option value="">请选择</option><option>男</option><option>女</option></select>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

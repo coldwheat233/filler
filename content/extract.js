@@ -221,7 +221,21 @@ function extractForm() {
       });
     }
 
-    kept.forEach((g, gi) => {
+    // 候选段落过滤：
+    // - 单块且没有「添加」按钮：不是可扩展段落，字段改按顶层字段处理。
+    //   否则 SPA 根节点（如 div.app-root）这类“唯一大容器”会被误判成段落，
+    //   它的父节点又被当成排除区，整页字段直接清零（金山网申实测踩坑）。
+    // - 单块且吞下页面九成以上可填控件：明显是表单容器，同样拒绝。
+    const pageControlCount = document.querySelectorAll(FW_CONTROL_FILL).length;
+    const real = kept.filter((g) => {
+      if (g.items.length !== 1) return true;
+      const own = g.el.querySelectorAll(FW_CONTROL_FILL).length;
+      const share = pageControlCount > 0 ? own / pageControlCount : 0;
+      if (share >= 0.9) return false;
+      return !!btnFor.get(g);
+    });
+
+    real.forEach((g, gi) => {
       const btn = btnFor.get(g);
       const addText = btn ? btn.txt : "";
       const rep = {
@@ -246,7 +260,7 @@ function extractForm() {
       rep.theme = fwMatchRepeaterTheme(themeText);
       repeaters.push(rep);
     });
-    excludeParents = kept.map((g) => g.parent);
+    excludeParents = real.map((g) => g.parent);
   })();
 
   const inExcl = (el) => excludeParents.some((p) => p.contains(el));

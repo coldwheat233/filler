@@ -409,8 +409,8 @@ async function startPlan() {
   } catch (e) {
     const text = String(e.message || e);
     msg("plan-msg",
-      text.includes("Could not establish connection") || text.includes("Receiving end does not exist")
-        ? "该页面无法注入（浏览器内置页/请刷新页面后重试/file页面需开启“允许访问文件网址”）"
+      text.includes("Could not establish connection") || text.includes("Receiving end does not exist") || text.includes("message port closed")
+        ? "页面上没找到可填写的表单：等页面完全加载后重试；浏览器内置页无法注入"
         : text, "err");
     btn.disabled = false;
     return;
